@@ -29,6 +29,9 @@ const Login = () => {
           required
         />
         <button type="submit">Login</button>
+        <p>
+          Don't have an account? <a href="register.html">Register here</a>
+        </p>
       </form>
     </div>
   );

@@ -1,0 +1,12 @@
+.weeklymealplan-container{
+    width: 40%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+    margin-left: 5px;
+  
+}
+h1{
+        font-family:'Courier New', Courier, monospace
+}

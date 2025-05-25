@@ -3,6 +3,7 @@ import './App.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Register from './components/Register/Register';
 import Dashboard from './components/Dashboard/Dashboard';
+import Welcome from './components/Welcome/Welcome'
 function App() {
   return (
     <div className="App">
@@ -20,25 +21,7 @@ function App() {
   );
 }
 
-// Welcome component (for the root path)
-function Welcome() {
-  return (
-    <div>
-      <h1>Welcome to OPTIMEAL!</h1>
-      <image src="/Downloads/" alt="Welcome to OPTIMEAL" />
-      <p>
-        OPTIMEAL is your go-to platform for personalized meal planning and nutrition tracking.
-        <br />
-        <strong>Get started by logging in or registering!</strong>
-      </p>
-      <p>
-        <a href="/login">Login</a> or <a href="/register">Register</a>
-      </p>
-    </div>
-  );
-}
 
-// Optional: 404 Not Found component
 function NotFound() {
   return (
     <div>

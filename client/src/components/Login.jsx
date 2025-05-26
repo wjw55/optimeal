@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './Login.css'; // Import the CSS file for styling
 import { Link, useNavigate } from 'react-router-dom'; // Import Link for navigation
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from "/home/wjw/optimeal/client/src/firebase.js";
+import { auth } from "./firebase.js"; // Adjust the import path based on your project structure
 
 
 const Login = () => {

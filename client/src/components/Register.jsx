@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '/home/wjw/optimeal/client/src/firebase.js'; // Adjust path based on your project structure
+import { auth } from './firebase.js'; // Adjust path based on your project structure
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import './Register.css';
 

@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import './Login.css'; // Import the CSS file for styling
-import { Link } from 'react-router-dom'; // Import Link for navigation
+import { Link, useNavigate } from 'react-router-dom'; // Import Link for navigation
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from "/home/wjw/optimeal/client/src/firebase.js";
 
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
-    // TODO: Connect to backend later
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate('/dashboard');  
+   } catch (err) {
+      alert(err.message);
+   }
   };
 
   return (

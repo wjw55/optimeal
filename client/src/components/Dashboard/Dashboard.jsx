@@ -2,12 +2,24 @@ import './Dashboard.css'
 import React from 'react';
 import { Link } from 'react-router-dom'; // Import Link for navigation
 import { useState } from 'react'; // Import useState for state management
-import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
 
-const Dashboard=() => {
+function App(){
   const [isEditing, setIsEditing] = useState(false);
   const [weight, setWeight] = useState("140 lbs");
   const [goal, setGoal] = useState("Maintain weight");
+  const [allergies, setAllergies] = useState([]);
+  const [preferences, setPreferences] = useState([]);
+  
+  const allergyOptions = ["Peanuts", "Dairy", "Gluten"];
+  const preferenceOptions = ["Vegetarian", "Vegan", "Halal"];
+
+  const toggleCheckbox = (value, list, setList) => {
+      if (list.includes(value)) {
+        setList(list.filter(item => item !== value));
+      } else {
+        setList([...list, value]);
+      }
+    };
 
   const mealPlans = {
     "Maintain weight": ["Chicken Breast", "Salad", "Chicken Breast", "Taco", "Salmon", "Jiawei Fried Rice", "Hospital Food"],
@@ -85,6 +97,8 @@ const Dashboard=() => {
             <div id="profile-content">
               <p>Weight: <span>{weight}</span></p>
               <p>Goal: <span>{goal}</span></p>
+              <p>Allergies: <span>{allergies.length ? allergies.join(', ') : 'None'}</span></p>
+              <p>Preferences: <span>{preferences.length ? preferences.join(', ') : 'None'}</span></p>
             </div>
           ) : (
             <div id="profile-edit">
@@ -99,6 +113,30 @@ const Dashboard=() => {
                   <option>Gain weight</option>
                 </select>
               </p>
+              <p>
+                Allergies:<br />
+                {allergyOptions.map(option => (
+                  <label key={option}>
+                    <input
+                      type="checkbox"
+                      checked={allergies.includes(option)}
+                      onChange={() => toggleCheckbox(option, allergies, setAllergies)}
+                    /> {option}
+                  </label>
+                ))}
+              </p>
+              <p>
+                Preferences:<br />
+                {preferenceOptions.map(option => (
+                  <label key={option}>
+                    <input
+                      type="checkbox"
+                      checked={preferences.includes(option)}
+                      onChange={() => toggleCheckbox(option, preferences, setPreferences)}
+                    /> {option}
+                  </label>
+                ))}
+              </p>
               <button className="save-btn" onClick={handleSave}>Save</button>
             </div>
           )}
@@ -106,13 +144,12 @@ const Dashboard=() => {
 
         {/* Avatar */}
         <div className="avatar card">
-          <img  src= {userImg} alt="User Profile" />
+          <img src={userImg} alt="User Profile" />
         </div>
       </div>
     </div>
   );
 }
+export default App;
 
-export default Dashboard;
-
-    
+       

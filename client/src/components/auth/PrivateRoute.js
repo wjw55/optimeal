@@ -1,4 +1,3 @@
-//to prevent entering of dashboard directly
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';

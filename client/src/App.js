@@ -1,10 +1,10 @@
-import Login from './components/Login';
+import Login from './components/auth/Login';
 import './App.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Register from './components/Register';
+import Register from './components/auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import Welcome from './components/Welcome/Welcome'
-import PrivateRoute from './components/PrivateRoute';
+import PrivateRoute from './components/auth/PrivateRoute';
 function App() {
   return (
     <div className="App">

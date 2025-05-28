@@ -11,7 +11,7 @@ const PrivateRoute = ({ children }) => {
     return <p>Loading...</p>; // Show while checking auth
   }
 
-  return user ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 export default PrivateRoute;

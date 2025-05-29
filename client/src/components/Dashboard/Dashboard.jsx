@@ -2,7 +2,7 @@ import './Dashboard.css'
 import React from 'react';
 import { Link } from 'react-router-dom'; // Import Link for navigation
 import { useState } from 'react'; // Import useState for state management
-import userImg from './Images/UserProfileimg.JPG';
+import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
 
 const Dashboard=() => {
   const [isEditing, setIsEditing] = useState(false);
@@ -106,7 +106,7 @@ const Dashboard=() => {
 
         {/* Avatar */}
         <div className="avatar card">
-          <img src={userImg} alt="User Profile" />
+          <img  src= {userImg} alt="User Profile" />
         </div>
       </div>
     </div>

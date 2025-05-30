@@ -9,7 +9,6 @@ function App(){
   const [goal, setGoal] = useState("Maintain weight");
   const [allergies, setAllergies] = useState([]);
   const [preferences, setPreferences] = useState([]);
-  
   const allergyOptions = ["Peanuts", "Dairy", "Gluten"];
   const preferenceOptions = ["Vegetarian", "Vegan", "Halal"];
 

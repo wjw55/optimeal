@@ -1,0 +1,91 @@
+/* Welcome.css */
+.welcome-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #E7DECD;
+  }
+  
+  .welcome-header {
+    font-size: 3rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  }
+  
+  .welcome-image {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .welcome-text {
+    font-size: 1.2rem;
+    color: #34495e;
+    max-width: 800px;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+  }
+  
+  .welcome-cta {
+    font-size: 1.3rem;
+    margin-bottom: rem;
+    color: #2c3e50;
+  }
+  
+  .welcome-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .welcome-link {
+    padding: 0.8rem 1.5rem;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .welcome-link.login {
+    background-color: #3498db;
+    color: white;
+  }
+  
+  .welcome-link.register {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  .welcome-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .welcome-header {
+      font-size: 2rem;
+    }
+    
+    .welcome-text {
+      font-size: 1rem;
+    }
+  }
+  .welcome-container {
+    animation: fadeIn 0.8s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }

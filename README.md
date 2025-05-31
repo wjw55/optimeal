@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🚀 OPTIMEAL: Your Personalized Meal Planner
 
 **WnN Cosmic** | Built with ❤️ using React, Node.js, Firebase & OpenAI

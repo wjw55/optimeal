@@ -1,8 +1,13 @@
 import './Dashboard.css'
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom'; // Import Link for navigation
 import { useState } from 'react'; // Import useState for state management
 import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
+import { db, auth } from '../auth/firebase'; // Import Firebase auth and db
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import { signOut } from 'firebase/auth';
+
+
 
 function App(){
   const [isEditing, setIsEditing] = useState(false);
@@ -33,12 +38,65 @@ function App(){
     "Gain weight": { calories: 2500, carbs: 300, fats: 100 }
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log("User is authenticated:", user.uid);
+        setUserId(user.uid);
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+        const data = userSnap.data();
+        setWeight(data.weight || "");
+        setGoal(data.goal || "Maintain weight");
+        setAllergies(data.allergies || []);
+        setPreferences(data.preferences || []);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleSave = async () => {
+    if (!userId) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    const userRef = doc(db, "users", userId);
+    const userData = {
+      weight,
+      goal,
+      allergies,
+      preferences,
+      updatedAt: new Date()
+    };
+
+    try {
+      await setDoc(userRef, userData, { merge: true });
+      console.log("User profile updated successfully");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+    }
   };
 
   const currentMeals = mealPlans[goal];
   const currentNutrition = nutrition[goal];
+
+  const [userId, setUserId] = useState(null);
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      console.log("User logged out successfully");
+      setUserId(null);
+      window.location.href = '/'; // Redirect to home page after logout
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  }
+
 
   return (
     <div className="App">
@@ -52,6 +110,7 @@ function App(){
           <a href="#">Meals</a>
           <a href="#">Grocery List</a>
           <a href="#">Settings</a>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>
       </div>
 

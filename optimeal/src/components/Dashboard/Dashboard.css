@@ -101,6 +101,22 @@
 .edit-btn:hover {
   background-color: #45a049;
 }
+
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin-left: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  width: auto;
+}
+
+.logout-btn:hover {
+  background-color: #c0392b;
+}
+
 html, body{
   margin: 0;
   padding: 0;

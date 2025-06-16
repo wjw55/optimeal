@@ -14,10 +14,10 @@ const Login = () => {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');  
-   } catch (err) {
+      navigate('/dashboard');
+    } catch (err) {
       alert(err.message);
-   }
+    }
   };
 
   return (

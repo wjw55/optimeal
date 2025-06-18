@@ -1,6 +1,6 @@
 import './Dashboard.css'
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom'; // Import Link for navigation
+import { Link, useNavigate } from 'react-router-dom'; // Import Link for navigation
 import { useState } from 'react'; // Import useState for state management
 import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
 import { db, auth } from '../auth/firebase'; // Import Firebase auth and db
@@ -29,7 +29,8 @@ function App(){
   Friday: { breakfast: "", lunch: "", dinner: "" },
   Saturday: { breakfast: "", lunch: "", dinner: "" },
   Sunday: { breakfast: "", lunch: "", dinner: "" }
-});
+  });
+  const navigate = useNavigate();
   const [currentNutrition, setCurrentNutrition] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   
 
@@ -145,19 +146,73 @@ function App(){
 
 const parseMealPlanResponse = (apiResponse) => {
   try {
-    const jsonString = apiResponse.replace(/```json|```/g, '').trim();
-    const parsedData = JSON.parse(jsonString);
+    const cleanResponse = apiResponse
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
     
-    // Return the days object directly instead of converting to array
+    const data = JSON.parse(cleanResponse);
+
+    // Define the exact order we want
+    const dayOrder = [
+      'Monday',
+      'Tuesday', 
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+
+    // Create ordered object using reduce
+    const orderedMeals = dayOrder.reduce((acc, day) => {
+      acc[day] = data.days[day] || {
+        breakfast: "",
+        lunch: "",
+        dinner: "",
+        groceries: {}
+      };
+      return acc;
+    }, {});
+
+    console.log("Final ordered meals:", orderedMeals);
+
     return {
-      meals: parsedData.days,  // Keep as object {Monday: {...}, Tuesday: {...}, etc}
-      nutrition: parsedData.nutrition
+      meals: orderedMeals,
+      nutrition: data.nutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 }
     };
   } catch (error) {
-    console.error("Error parsing meal plan:", error);
-    throw new Error("Failed to process meal plan data");
+    console.error("Parsing error:", error);
+    throw new Error("Failed to parse meal plan response");
   }
 };
+
+  const fetchMealPlan = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            // Set the meal plan if it exists in Firebase
+            if (userData.currentMeals) {
+              setCurrentMeals(userData.currentMeals);
+            }
+            // Set nutrition if it exists
+            if (userData.nutrition) {
+              setCurrentNutrition(userData.nutrition);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching meal plan:", error);
+        }
+      }
+    };
+
+    fetchMealPlan();
+  
   
 
   return (
@@ -172,9 +227,9 @@ const parseMealPlanResponse = (apiResponse) => {
         </div>
         
         <nav>
-          <a href="#">Dashboard</a>
+          <Link to="/dashboard">Dashboard</Link>
           <a href="#">Meals</a>
-          <a href="#">Grocery List</a>
+          <Link to="/grocery">Grocery List</Link>
           <a href="#">Settings</a>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>
@@ -197,20 +252,20 @@ const parseMealPlanResponse = (apiResponse) => {
     </tr>
   </thead>
   <tbody>
-    {Object.entries(currentMeals).map(([dayName, meals]) => (
-      <tr key={dayName}>
-        <td>{dayName}</td>
-        <td>{meals.breakfast}</td>
-        <td>{meals.lunch}</td>
-        <td>{meals.dinner}</td>
-      </tr>
-    ))}
+    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(dayName => (
+    <tr key={dayName}>
+      <td>{dayName}</td>
+      <td>{currentMeals[dayName]?.breakfast || ''}</td>
+      <td>{currentMeals[dayName]?.lunch || ''}</td>
+      <td>{currentMeals[dayName]?.dinner || ''}</td>
+    </tr>
+  ))}
   </tbody>
 </table>
 <button onClick={async () => {
   setIsLoading(true);
   setError(null);
-  
+
   try {
     // Build the prompt using user profile data
     const prompt = `Generate a 7-day gluten-free, dairy-free, peanut-free meal plan for ${goal.toLowerCase()} weight.
@@ -223,34 +278,50 @@ const parseMealPlanResponse = (apiResponse) => {
         "Monday": {
         "breakfast": "1-2 word description",
         "lunch": "1-2 word description",
-        "dinner": "1-2 word description"
+        "dinner": "1-2 word description",
+        "groceries": {
+          "breakfast": ["ingredient1", "ingredient2"],
+          "lunch": ["ingredient1", "ingredient2"],
+          "dinner": ["ingredient1", "ingredient2"]
+        }
+      },
+      // From Monday to Sunday
     },
-    // ... all days ...
-  },
     "nutrition": {
       "calories": number,
       "protein": number,
       "carbs": number,
       "fats": number
-      }
+    }
     }`;
+
     const apiResponse = await callOpenRouter(prompt);
+    console.log("API Response:", apiResponse);
     const { meals, nutrition } = parseMealPlanResponse(apiResponse);
-    console.log("Parsed Meals:", meals);
-    console.log("Parsed Nutrition:", nutrition);
-    
+
     // Update state
     setCurrentMeals(meals);
     setCurrentNutrition(nutrition);
-    
-    } catch (err) {
-      setError(err.message || "Failed to generate meal plan");
-    } finally {
-      setIsLoading(false);
+    console.log("Parsed Meals:", meals);
+    console.log("Parsed Nutrition:", nutrition);
+
+    // Store in Firebase
+    if (userId) {
+      const userRef = doc(db, "users", userId);
+      await setDoc(userRef, {
+        currentMeals: meals,
+        nutrition: nutrition,
+        updatedAt: new Date()
+      }, { merge: true });
     }
-  }}>
-    {isLoading ? "Generating..." : "Generate Meal Plan"}
-  </button>
+  } catch (err) {
+    setError(err.message || "Failed to generate meal plan");
+  } finally {
+    setIsLoading(false);
+  }
+}}>
+  {isLoading ? "Generating..." : "Generate Meal Plan"}
+</button>
 </div>
   {/* Nutritional Overview - Now connected to AI */}
   <div className="nutrition-overview card">
@@ -346,5 +417,4 @@ const parseMealPlanResponse = (apiResponse) => {
 }
 export default App;
 
-       
-    
+

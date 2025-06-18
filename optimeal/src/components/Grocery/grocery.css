@@ -1,31 +1,37 @@
-* {
+/* General Body Styling */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
-body {
-    background-color: #E7DECD;
-}
-
+/* Title */
 h1.title {
     text-align: center;
-    margin: 30px 0;
-    font-size: 3rem;
-    color: #333;
+    margin: 40px 0 20px;
+    font-size: 2.8rem;
+    color: #2c3e50;
 }
 
-.container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    padding: 20px;
+/* Day Dropdown */
+.day-select {
+    display: block;
+    margin: 0 auto 30px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 2px solid #2c3e50;
+    background-color: #ffffff;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    cursor: pointer;
 }
 
+/* Container for all day boxes */
+/* Day box */
 .box {
-    width: 250px;
+    width: 90%;
+    max-width: 400px;
+    margin: 20px auto; /* Centers the box and adds vertical spacing */
     padding: 15px;
     border: 1px solid #ccc;
     border-radius: 10px;
@@ -34,36 +40,112 @@ h1.title {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.box h2 {
-    margin-bottom: 10px;
-    color: #2c3e50;
-}
 
 .box:hover {
     transform: translateY(-5px);
-    box-shadow: 6px 6px 15px rgba(0,0,0,0.15);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
 }
 
+.box h2 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+/* Meal buttons */
 .meal-box {
     width: 100%;
-    height: 80px;
-    background-color: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin: 8px 0;
+    background-color: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: 0.2s ease-in-out;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
 }
 
 .meal-box h4 {
     font-size: 1.1rem;
-    color: #555;
+    color: #2c3e50;
+    margin: 0;
 }
 
 .meal-box:hover {
-    background-color: #f1f1f1;
+    background-color: #eaeaea;
     transform: scale(1.02);
 }
+
+/* Expanded meal content */
+.meal-content {
+    max-height: 0;
+    overflow: hidden;
+    background-color: #fcfcfc;
+    border-radius: 0 0 10px 10px;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+    padding: 0 10px;
+}
+
+.meal-content.expanded {
+    max-height: 400px;
+    padding: 10px 10px 15px;
+    border-top: 1px dashed #ccc;
+    margin-top: 6px;
+}
+
+.meal-content h5 {
+    margin: 8px 0;
+    font-weight: normal;
+    color: #555;
+    font-size: 0.95rem;
+}
+
+/* Grocery list inside meal content */
+.meal-content ul {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 8px;
+}
+
+.meal-content li {
+    padding: 5px 0;
+    color: #444;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #eee;
+}
+
+/* Navbar (if used) */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.navbar .branding h1 {
+    font-size: 1.8rem;
+    color: #34495e;
+}
+
+.navbar nav a {
+    margin: 0 15px;
+    color: #34495e;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.navbar nav a:hover {
+    color: #1abc9c;
+}
+
+.avatar-img{
+    width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  
+}
+
+

@@ -5,6 +5,7 @@ import Register from './components/auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import Welcome from './components/Welcome/Welcome'
 import PrivateRoute from './components/auth/PrivateRoute';
+import GroceryList from './components/Grocery/grocery'
 function App() {
   return (
     <div className="App">
@@ -15,6 +16,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}/>
+          <Route path="/grocery" element={<PrivateRoute><GroceryList /></PrivateRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

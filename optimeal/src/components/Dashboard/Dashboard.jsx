@@ -2,7 +2,7 @@ import './Dashboard.css'
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; // Import Link for navigation
 import { useState } from 'react'; // Import useState for state management
-import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
+//import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
 import { db, auth } from '../auth/firebase'; // Import Firebase auth and db
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 import { signOut } from 'firebase/auth';
@@ -42,7 +42,7 @@ function App(){
       }
     };
 
-  const mealPlans = {
+  /*const mealPlans = {
     "Maintain weight": ["Chicken Breast", "Salad", "Chicken Breast", "Taco", "Salmon", "Fried Rice", "Hospital Food"],
     "Lose weight": ["Boiled Eggs", "Green Smoothie", "Steamed Veggies", "Grilled Fish", "Tofu Salad", "Broccoli Soup", "Fruit Bowl"],
     "Gain weight": ["Steak", "Pasta", "Peanut Butter Sandwich", "Burger", "Fried Rice", "Pizza", "Protein Shake"]
@@ -52,7 +52,7 @@ function App(){
     "Maintain weight": { calories: 1800, carbs: 200, fats: 60 },
     "Lose weight": { calories: 1500, carbs: 120, fats: 40 },
     "Gain weight": { calories: 2500, carbs: 300, fats: 100 }
-  };
+  };*/
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -221,9 +221,6 @@ const parseMealPlanResponse = (apiResponse) => {
       <div className="navbar">
         <div className="branding">
           <h1>OPTIMEAL</h1>
-          <div className="avatar card">
-          <img src={userImg} alt="User Profile" />
-          </div>
         </div>
         
         <nav>
@@ -350,20 +347,20 @@ const parseMealPlanResponse = (apiResponse) => {
     </div>
   </div>
 
-  {/* Profile Card (unchanged) */}
         {/* Profile Card */}
         <div className="profile card">
           <div className="profile-header">
             <h2>My Profile</h2>
-            {!isEditing && <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit</button>}
           </div>
 
           {!isEditing ? (
             <div id="profile-content">
               <p>Weight: <span>{weight}</span></p>
-              <p>Goal: <span>{goal}</span></p>
+              <p>Goal:<span>{goal}</span></p>
               <p>Allergies: <span>{allergies.length ? allergies.join(', ') : 'None'}</span></p>
               <p>Preferences: <span>{preferences.length ? preferences.join(', ') : 'None'}</span></p>
+            {!isEditing && <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit</button>}
+
             </div>
           ) : (
             <div id="profile-edit">

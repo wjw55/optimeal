@@ -84,11 +84,12 @@
 
 .profile-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
 }
 
 .edit-btn {
+  width: 200px;
   padding: 6px 12px;
   font-size: 14px;
   border: none;

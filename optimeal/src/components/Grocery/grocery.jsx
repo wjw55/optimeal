@@ -3,7 +3,7 @@ import './grocery.css';
 import {db, auth } from '../auth/firebase'
 import { Link, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
-import userImg from './Images/user-profile-icon-free-vector.jpg';
+//import userImg from './Images/user-profile-icon-free-vector.jpg';
 
 
 const days = [
@@ -64,9 +64,6 @@ const GroceryList = () => {
       <div className="navbar">
         <div className="branding">
           <h1>OPTIMEAL</h1>
-          <div className="avatar card">
-            <img src={userImg} alt="User Profile" className="user-profile" />
-          </div>
         </div>
         
         <nav>

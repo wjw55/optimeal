@@ -4,8 +4,8 @@ body {
     }
     
     .container {
-    max-width: 400px;
-    margin: 50px auto;
+    max-width: 350px;
+    margin: 100px auto;
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 5px;

@@ -1,0 +1,46 @@
+.new-recipe-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.new-recipe-form h3 {
+  margin-bottom: 1rem;
+}
+
+.new-recipe-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.new-recipe-form input,
+.new-recipe-form textarea {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.new-recipe-form button {
+  padding: 0.5rem 1rem;
+  background-color: rgb(61, 126, 99);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.new-recipe-form button:hover {
+  background-color: #0a6;
+}
+
+.new-recipe-form .error {
+  color: red;
+  margin-bottom: 1rem;
+}
+
+.new-recipe-form .success {
+  color: green;
+  margin-bottom: 1rem;
+}

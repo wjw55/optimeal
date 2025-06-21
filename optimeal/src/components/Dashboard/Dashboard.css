@@ -137,6 +137,36 @@
   font-weight: 600;
 }
 
+input {
+  width: fit-content;
+  padding: 8px;
+  margin-top: 8px;  
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+}
+select{
+  width: fit-content;
+  padding: 8px;
+  margin-top: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+}
+
+label {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between; /* push text left and checkbox right */
+  align-items: center;
+  font-weight: bold;
+  color: #333;
+  padding: 4px 0;
+  margin-left: 10px;
+}
+
 html, body{
   margin: 0;
   padding: 0;

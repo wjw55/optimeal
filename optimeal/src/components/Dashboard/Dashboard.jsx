@@ -12,7 +12,11 @@ import { signOut } from 'firebase/auth';
 
 function App() {
   const [isEditing, setIsEditing] = useState(false);
-  const [weight, setWeight] = useState("140 lbs");
+  const [age, setAge] = useState("20");
+  const [sex, setSex] = useState("Male");
+  const [weight, setWeight] = useState("80 kg");
+  const [activityLevel, setActivityLevel] = useState("Moderate");
+  const [height, setHeight] = useState("180 cm");
   const [goal, setGoal] = useState("Maintain weight");
   const [allergies, setAllergies] = useState([]);
   const [preferences, setPreferences] = useState([]);
@@ -42,18 +46,6 @@ function App() {
     }
   };
 
-  /*const mealPlans = {
-    "Maintain weight": ["Chicken Breast", "Salad", "Chicken Breast", "Taco", "Salmon", "Fried Rice", "Hospital Food"],
-    "Lose weight": ["Boiled Eggs", "Green Smoothie", "Steamed Veggies", "Grilled Fish", "Tofu Salad", "Broccoli Soup", "Fruit Bowl"],
-    "Gain weight": ["Steak", "Pasta", "Peanut Butter Sandwich", "Burger", "Fried Rice", "Pizza", "Protein Shake"]
-  };
-
-  const nutrition = {
-    "Maintain weight": { calories: 1800, carbs: 200, fats: 60 },
-    "Lose weight": { calories: 1500, carbs: 120, fats: 40 },
-    "Gain weight": { calories: 2500, carbs: 300, fats: 100 }
-  };*/
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -81,6 +73,10 @@ function App() {
 
     const userRef = doc(db, "users", userId);
     const userData = {
+      age,
+      sex,
+      height,
+      activityLevel,
       weight,
       goal,
       allergies,
@@ -97,8 +93,6 @@ function App() {
     }
   };
 
-  /*const currentMeals = mealPlans[goal];
-  const currentNutrition = nutrition[goal];*/
 
   const [userId, setUserId] = useState(null);
 
@@ -266,31 +260,37 @@ function App() {
               try {
                 // Build the prompt using user profile data
                 const prompt = `Generate a 7-day gluten-free, dairy-free, peanut-free meal plan for ${goal.toLowerCase()} weight.
-    Dietary restrictions: ${allergies.join(', ') || 'none'}.
-    Preferences: ${preferences.join(', ') || 'none'}.
+                                Age: ${age}
+                                Sex: ${sex}
+                                Height: ${height}
+                                Weight: ${weight}
+                                Activity Level: ${activityLevel}
+                                Goal: ${goal}
+                                Dietary restrictions: ${allergies.join(', ') || 'none'}
+                                Preferences: ${preferences.join(', ') || 'none'}
 
-    Return ONLY pure JSON (no markdown, no notes) in this exact format:
-    {
-      "days": {
-        "Monday": {
-        "breakfast": "1-2 word description",
-        "lunch": "1-2 word description",
-        "dinner": "1-2 word description",
-        "groceries": {
-          "breakfast": ["ingredient1", "ingredient2"],
-          "lunch": ["ingredient1", "ingredient2"],
-          "dinner": ["ingredient1", "ingredient2"]
-        }
-      },
-      // From Monday to Sunday
-    },
-    "nutrition": {
-      "calories": number,
-      "protein": number,
-      "carbs": number,
-      "fats": number
-    }
-    }`;
+                                Return ONLY pure JSON (no markdown, no notes) in this exact format:
+                                {
+                                  "days": {
+                                    "Monday": {
+                                    "breakfast": "1-2 word description",
+                                    "lunch": "1-2 word description",
+                                    "dinner": "1-2 word description",
+                                    "groceries": {
+                                      "breakfast": ["ingredient1", "ingredient2"],
+                                      "lunch": ["ingredient1", "ingredient2"],
+                                      "dinner": ["ingredient1", "ingredient2"]
+                                    }
+                                  },
+                                  // From Monday to Sunday
+                                },
+                                "nutrition": {
+                                  "calories": number,
+                                  "protein": number,
+                                  "carbs": number,
+                                  "fats": number
+                                }
+                                }`;
 
                 const apiResponse = await callOpenRouter(prompt);
                 console.log("API Response:", apiResponse);
@@ -355,7 +355,11 @@ function App() {
 
             {!isEditing ? (
               <div id="profile-content">
+                <p>Age: <span>{age}</span></p>
+                <p>Sex: <span>{sex}</span></p>
+                <p>Height: <span>{height}</span></p>
                 <p>Weight: <span>{weight}</span></p>
+                <p>Activity Level: {activityLevel}</p>
                 <p>Goal:<span>{goal}</span></p>
                 <p>Allergies: <span>{allergies.length ? allergies.join(', ') : 'None'}</span></p>
                 <p>Preferences: <span>{preferences.length ? preferences.join(', ') : 'None'}</span></p>
@@ -365,7 +369,28 @@ function App() {
             ) : (
               <div id="profile-edit">
                 <p>
+                  Age: <input type="number" value={age} onChange={(e) => setAge(e.target.value)} />
+                </p>
+                <p>
+                  Sex: 
+                  <select value={sex} onChange={(e) => setSex(e.target.value)}>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </p>
+                <p>
+                  Height: <input type="text" value={height} onChange={(e) => setHeight(e.target.value)} />
+                </p>
+                <p>
                   Weight: <input type="text" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                </p>
+                <p>
+                  Activity Level: 
+                  <select value={activityLevel} onChange={(e) => setActivityLevel(e.target.value)}>
+                    <option>Moderate</option>
+                    <option>Intense</option>
+                    <option>Light</option>
+                  </select>
                 </p>
                 <p>
                   Goal:
@@ -376,7 +401,7 @@ function App() {
                   </select>
                 </p>
                 <p>
-                  Allergies:<br />
+                  Allergies:<br/>
                   {allergyOptions.map(option => (
                     <label key={option}>
                       <input
@@ -403,11 +428,7 @@ function App() {
               </div>
             )}
           </div>
-
-
         </div>
-
-
       </div>
     </div>
   );

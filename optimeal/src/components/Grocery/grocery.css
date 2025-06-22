@@ -5,147 +5,432 @@ body {
     padding: 0;
 }
 
+/* Overall page layout */
+.grocery-page {
+  max-width: 800px;  /* Reduced from 1200px */
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
 /* Title */
 h1.title {
-    text-align: center;
-    margin: 40px 0 20px;
-    font-size: 2.8rem;
-    color: #2c3e50;
+  text-align: center;
+  margin: 30px 0 20px;
+  font-size: 2.5rem;
+  color: #2c3e50;
 }
 
 /* Day Dropdown */
-.day-select {
-    display: block;
-    margin: 0 auto 30px;
-    padding: 12px 16px;
-    border-radius: 6px;
-    border: 2px solid #2c3e50;
-    background-color: #ffffff;
-    font-size: 1.1rem;
-    color: #2c3e50;
-    cursor: pointer;
+.day-select-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.day-select,
+.meal-select {
+  display: block;
+  margin: 0 auto 20px;
+  padding: 12px 20px;
+  border-radius: 30px;
+  border: 2px solid #2c3e50;
+  background-color: #ffffff;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  cursor: pointer;
+  min-width: 200px;
+  max-width: 300px;
+  text-align: center;
+}
+
+/* Day boxes layout */
+.days-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 25px;
+  margin: 0 auto;
 }
 
 /* Container for all day boxes */
 /* Day box */
 .box {
-    width: 90%;
-    max-width: 400px;
-    margin: 20px auto; /* Centers the box and adds vertical spacing */
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    background-color: whitesmoke;
-    text-align: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 600px;  /* Add max-width to make boxes narrower */
+  margin: 0 auto 20px;  /* Center the box and add bottom margin */
+  padding: 20px;
+  border: none;
+  border-radius: 12px;
+  background-color: white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-
 .box:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
 }
 
 .box h2 {
-    color: #34495e;
-    margin-bottom: 10px;
+  color: #34495e;
+  margin-bottom: 15px;
+  font-size: 1.6rem;
 }
 
 /* Meal buttons */
 .meal-box {
-    width: 100%;
-    background-color: #f7f7f7;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin-top: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  background-color: #f7f7f7;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 .meal-box h4 {
-    font-size: 1.1rem;
-    color: #2c3e50;
-    margin: 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin: 0;
 }
 
 .meal-box:hover {
-    background-color: #eaeaea;
-    transform: scale(1.02);
+  background-color: #eaeaea;
+  transform: scale(1.02);
 }
 
 /* Expanded meal content */
 .meal-content {
-    max-height: 0;
-    overflow: hidden;
-    background-color: #fcfcfc;
-    border-radius: 0 0 10px 10px;
-    transition: max-height 0.4s ease, padding 0.3s ease;
-    padding: 0 10px;
+  max-height: 0;
+  overflow: hidden;
+  background-color: #fcfcfc;
+  border-radius: 0 0 10px 10px;
+  transition: max-height 0.4s ease, padding 0.3s ease;
+  padding: 0 10px;
 }
 
 .meal-content.expanded {
-    max-height: 400px;
-    padding: 10px 10px 15px;
-    border-top: 1px dashed #ccc;
-    margin-top: 6px;
+  max-height: 800px;
+  padding: 15px;
 }
 
 .meal-content h5 {
-    margin: 8px 0;
-    font-weight: normal;
-    color: #555;
-    font-size: 0.95rem;
+  margin: 8px 0;
+  font-weight: normal;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* Grocery container for both boxes */
+.grocery-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+/* AI Meal Box */
+.ai-meal-box {
+  background-color: #e8f4fd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 5px;
+  border-left: 4px solid #3498db;
+}
+
+.ai-meal-box h5 {
+  margin: 0 0 8px 0;
+  color: #2980b9;
+  font-size: 0.95rem;
+}
+
+.ai-meal-box p {
+  margin: 0;
+  color: #333;
+}
+
+/* AI Ingredients box */
+.ai-ingredients-box {
+  background-color: #eaf7fd;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 4px solid #3498db;
+}
+
+.ai-ingredients-box h5 {
+  margin: 0 0 8px 0;
+  color: #2980b9;
+  font-size: 0.95rem;
+}
+
+/* User ingredients box */
+.user-ingredients-box {
+  background-color: #f0f9f0;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 4px solid #2ecc71;
+}
+
+.user-ingredients-box h5 {
+  margin: 0 0 8px 0;
+  color: #27ae60;
+  font-size: 0.95rem;
+}
+
+/* Empty state message */
+.empty-message {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
+  margin: 0;
+}
+
+/* Increase max height for expanded content */
+.meal-content.expanded {
+  max-height: 800px;
+}
+
+/* AI Ingredients section */
+.ai-ingredients {
+  margin-top: 12px;
+  border-top: 1px dashed #bbd8e8;
+  padding-top: 10px;
+}
+
+.ai-ingredients h6 {
+  margin: 0 0 8px 0;
+  color: #3498db;
+  font-size: 0.85rem;
+}
+
+/* Grocery Box */
+.grocery-box {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 4px solid #2ecc71;
+}
+
+.grocery-box h5 {
+  margin: 0 0 8px 0;
+  color: #27ae60;
+  font-size: 0.95rem;
+}
+
+/* Inline grocery add form */
+.add-grocery-inline {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.inline-input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.inline-input.small {
+  flex: 0.3;
+  min-width: 60px;
+}
+
+.add-inline-btn {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-inline-btn:hover {
+  background-color: #27ae60;
+}
+
+/* Empty state message */
+.grocery-box .empty-message {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 10px;
 }
 
 /* Grocery list inside meal content */
 .meal-content ul {
-    list-style: none;
-    padding-left: 0;
-    margin-top: 8px;
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
 }
 
 .meal-content li {
-    padding: 5px 0;
-    color: #444;
-    font-size: 0.95rem;
-    border-bottom: 1px solid #eee;
+  padding: 5px 0;
+  color: #444;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #eee;
 }
 
 /* Navbar (if used) */
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px;
-    background-color: #ffffff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .navbar .branding h1 {
-    font-size: 1.8rem;
-    color: #34495e;
+  font-size: 1.8rem;
+  color: #34495e;
 }
 
 .navbar nav a {
-    margin: 0 15px;
-    color: #34495e;
-    text-decoration: none;
-    font-weight: 500;
+  margin: 0 15px;
+  color: #34495e;
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .navbar nav a:hover {
-    color: #1abc9c;
+  color: #1abc9c;
 }
 
-.avatar-img{
-    width: 50px;
-  height: 50px;
-  border-radius: 50%;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .days-container {
+    grid-template-columns: 1fr;
+  }
   
+  .grocery-form {
+    grid-template-columns: 1fr;
+  }
 }
 
+/* Grocery form styling - reorganized layout */
+.grocery-form {
+  max-width: 450px;
+  margin: 0 auto 30px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
 
+/* Row container for form elements */
+.form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+/* Item name input - takes more space */
+.item-input {
+  flex: 2;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Count input - takes less space */
+.count-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  min-width: 80px;
+}
+
+/* Select inputs - equal width */
+.day-meal-select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+/* Button container for centering */
+.button-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+/* Add button styling */
+.add-btn {
+  background-color: #1abc9c;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.3s ease;
+  width: 150px;
+}
+
+.add-btn:hover {
+  background-color: #16a085;
+}
+
+/* Grocery items styling */
+.grocery-items {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.grocery-items li {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  margin: 5px 0;
+  background-color: white;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.grocery-items li:hover {
+  background-color: #f2f2f2;
+}
+
+.grocery-items li.checked span {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.grocery-items li span {
+  flex: 1;
+  text-align: left;
+}
+
+.delete-item {
+  background: none;
+  border: none;
+  color: #ff5252;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+  margin-left: auto;
+}
+
+.delete-item:hover {
+  color: #ff0000;
+}

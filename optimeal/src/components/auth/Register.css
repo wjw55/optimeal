@@ -1,29 +1,56 @@
 /* components/Register.css */
 body {
     font-family: Arial, sans-serif;
-    }
+}
     
-    .container {
+.container {
     max-width: 350px;
     margin: 100px auto;
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 5px;
     background: #f9f9f9;
-    }
+}
     
-    input {
+.container input {
     width: 100%;
     padding: 8px;
     margin: 8px 0;
     box-sizing: border-box;
-    }
+}
     
-    button {
+.container button {
     background: #007BFF;
     color: white;
     padding: 10px;
     border: none;
     cursor: pointer;
     width: 100%;
-    }
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.container button:hover {
+    background: #0069d9;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.container a {
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.container a:hover {
+    text-decoration: underline;
+}
+
+.container h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}

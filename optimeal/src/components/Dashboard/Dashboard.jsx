@@ -36,7 +36,7 @@ function App() {
   });
   const navigate = useNavigate();
   const [currentNutrition, setCurrentNutrition] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
-
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const toggleCheckbox = (value, list, setList) => {
     if (list.includes(value)) {
@@ -55,11 +55,27 @@ function App() {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
-          setWeight(data.weight || "");
+          // Load all profile fields from Firestore
+          setAge(data.age || "20");
+          setSex(data.sex || "Male");
+          setHeight(data.height || "180 cm");
+          setWeight(data.weight || "80 kg");
+          setActivityLevel(data.activityLevel || "Moderate");
           setGoal(data.goal || "Maintain weight");
           setAllergies(data.allergies || []);
           setPreferences(data.preferences || []);
+          
+          // Also load meal plan data if it exists
+          if (data.currentMeals) {
+            setCurrentMeals(data.currentMeals);
+          }
+          if (data.nutrition) {
+            setCurrentNutrition(data.nutrition);
+          }
         }
+      } else {
+        // User is not authenticated, redirect to login
+        navigate('/login');
       }
     });
     return () => unsubscribe();
@@ -87,6 +103,9 @@ function App() {
     try {
       await setDoc(userRef, userData, { merge: true });
       console.log("User profile updated successfully");
+      setSaveSuccess(true);
+      // Hide success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating user profile:", error);
@@ -181,31 +200,33 @@ function App() {
     }
   };
 
-  const fetchMealPlan = async () => {
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
+  useEffect(() => {
+    const fetchMealPlan = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          // Set the meal plan if it exists in Firebase
-          if (userData.currentMeals) {
-            setCurrentMeals(userData.currentMeals);
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            // Set the meal plan if it exists in Firebase
+            if (userData.currentMeals) {
+              setCurrentMeals(userData.currentMeals);
+            }
+            // Set nutrition if it exists
+            if (userData.nutrition) {
+              setCurrentNutrition(userData.nutrition);
+            }
           }
-          // Set nutrition if it exists
-          if (userData.nutrition) {
-            setCurrentNutrition(userData.nutrition);
-          }
+        } catch (error) {
+          console.error("Error fetching meal plan:", error);
         }
-      } catch (error) {
-        console.error("Error fetching meal plan:", error);
       }
-    }
-  };
+    };
 
-  fetchMealPlan();
+    fetchMealPlan();
+  }, []);
 
 
 
@@ -259,7 +280,7 @@ function App() {
 
               try {
                 // Build the prompt using user profile data
-                const prompt = `Generate a 7-day gluten-free, dairy-free, peanut-free meal plan for ${goal.toLowerCase()} weight.
+                const prompt = `Generate a 7-day meal plan for 
                                 Age: ${age}
                                 Sex: ${sex}
                                 Height: ${height}

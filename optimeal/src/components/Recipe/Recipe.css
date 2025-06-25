@@ -1,13 +1,123 @@
+/* Main Recipe Page Styling */
+.recipe-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.recipe-page h2 {
+  font-size: 2.2rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.recipe-page h2:after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 3px;
+  background-color: #3498db;
+  margin: 10px auto 0;
+  border-radius: 2px;
+}
+
+/* Tab Navigation Styling */
 .recipe-tabs {
-  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+  
 }
+
 .recipe-tabs a {
-  margin-right: 1rem;
+  margin: 0 1.5rem;
+  padding: 0.75rem 1.5rem;
   text-decoration: none;
-  color: #555;
+  color: #7f8c8d;
+  background-color: #fff;
+  font-weight: 500;
+  font-size: 1.1rem;
+  border-radius: 30px;
+  transition: all 0.3s ease;
 }
+
+.recipe-tabs a:hover {
+  color: #3498db;
+  background-color:whitesmoke;
+}
+
 .recipe-tabs a.active {
-  font-weight: bold;
-  color: #000;
-  border-bottom: 2px solid #000;
+  font-weight: 600;
+  color: #fff;
+  background-color: #3498db;
+  border-bottom: none;
+  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+}
+
+/* Recipe Content Container */
+.recipe-content {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 2rem;
+  min-height: 400px;
+}
+
+/* Navbar Styling */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.navbar .branding h1 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.navbar nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar nav a {
+  color: #7f8c8d;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  font-size: 1rem;
+}
+
+.navbar nav a:hover {
+  color: #3498db;
+}
+
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.2);
 }

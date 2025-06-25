@@ -221,7 +221,7 @@ function App() {
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/recipes">Recipes</Link>
           <Link to="/grocery">Grocery List</Link>
-          <a href="#">Settings</a>
+          {/*<a href="#">Social</a>*/}
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>
       </div>
@@ -253,7 +253,7 @@ function App() {
                 ))}
               </tbody>
             </table>
-            <button onClick={async () => {
+            <button class="generate-btn" onClick={async () => {
               setIsLoading(true);
               setError(null);
 
@@ -359,7 +359,7 @@ function App() {
                 <p>Sex: <span>{sex}</span></p>
                 <p>Height: <span>{height}</span></p>
                 <p>Weight: <span>{weight}</span></p>
-                <p>Activity Level: {activityLevel}</p>
+                <p>Activity Level: <span>{activityLevel}</span></p>
                 <p>Goal:<span>{goal}</span></p>
                 <p>Allergies: <span>{allergies.length ? allergies.join(', ') : 'None'}</span></p>
                 <p>Preferences: <span>{preferences.length ? preferences.join(', ') : 'None'}</span></p>
@@ -369,23 +369,26 @@ function App() {
             ) : (
               <div id="profile-edit">
                 <p>
-                  Age: <input type="number" value={age} onChange={(e) => setAge(e.target.value)} />
+                  <span>Age</span>
+                  <input type="number" value={age} onChange={(e) => setAge(e.target.value)} />
                 </p>
                 <p>
-                  Sex: 
+                  <span>Sex</span>
                   <select value={sex} onChange={(e) => setSex(e.target.value)}>
                     <option>Male</option>
                     <option>Female</option>
                   </select>
                 </p>
                 <p>
-                  Height: <input type="text" value={height} onChange={(e) => setHeight(e.target.value)} />
+                  <span>Height</span>
+                  <input type="text" value={height} onChange={(e) => setHeight(e.target.value)} />
                 </p>
                 <p>
-                  Weight: <input type="text" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                  <span>Weight</span>
+                  <input type="text" value={weight} onChange={(e) => setWeight(e.target.value)} />
                 </p>
                 <p>
-                  Activity Level: 
+                  <span>Activity Level</span>
                   <select value={activityLevel} onChange={(e) => setActivityLevel(e.target.value)}>
                     <option>Moderate</option>
                     <option>Intense</option>
@@ -393,7 +396,7 @@ function App() {
                   </select>
                 </p>
                 <p>
-                  Goal:
+                  <span>Goal</span>
                   <select value={goal} onChange={(e) => setGoal(e.target.value)}>
                     <option>Maintain weight</option>
                     <option>Lose weight</option>
@@ -401,28 +404,32 @@ function App() {
                   </select>
                 </p>
                 <p>
-                  Allergies:<br/>
-                  {allergyOptions.map(option => (
-                    <label key={option}>
-                      <input
-                        type="checkbox"
-                        checked={allergies.includes(option)}
-                        onChange={() => toggleCheckbox(option, allergies, setAllergies)}
-                      /> {option}
-                    </label>
-                  ))}
+                  <span>Allergies</span>
+                  <div className="checkbox-group">
+                    {allergyOptions.map(option => (
+                      <label key={option}>
+                        <input
+                          type="checkbox"
+                          checked={allergies.includes(option)}
+                          onChange={() => toggleCheckbox(option, allergies, setAllergies)}
+                        /> {option}
+                      </label>
+                    ))}
+                  </div>
                 </p>
                 <p>
-                  Preferences:<br />
-                  {preferenceOptions.map(option => (
-                    <label key={option}>
-                      <input
-                        type="checkbox"
-                        checked={preferences.includes(option)}
-                        onChange={() => toggleCheckbox(option, preferences, setPreferences)}
-                      /> {option}
-                    </label>
-                  ))}
+                  <span>Preferences</span>
+                  <div className="checkbox-group">
+                    {preferenceOptions.map(option => (
+                      <label key={option}>
+                        <input
+                          type="checkbox"
+                          checked={preferences.includes(option)}
+                          onChange={() => toggleCheckbox(option, preferences, setPreferences)}
+                        /> {option}
+                      </label>
+                    ))}
+                  </div>
                 </p>
                 <button className="save-btn" onClick={handleSave}>Save</button>
               </div>

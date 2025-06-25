@@ -373,19 +373,24 @@ h1.title {
 
 /* Add button styling */
 .add-btn {
-  background-color: #1abc9c;
+  padding: 0.75rem 2rem;
+  background-color: #27ae60;
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: 30px;
   cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.3s ease;
-  width: 150px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: block;
+  margin: 1rem auto 0;
+  min-width: 150px;
 }
 
 .add-btn:hover {
-  background-color: #16a085;
+  background-color: #219653;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(39, 174, 96, 0.2);
 }
 
 /* Grocery items styling */

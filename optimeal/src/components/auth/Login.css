@@ -24,6 +24,41 @@
   cursor: pointer;
 }
 
-.login-container button:hover {
+.login-btn:hover {
   background: #45a049;
+}
+
+/* Google Login Button Styling */
+.social-login {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.social-login p {
+  margin-bottom: 10px;
+  color: #666;
+  font-size: 14px;
+}
+
+.google-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+
+}
+.social-login .google-btn-icon {
+  width:fit-content;
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.social-login .google-btn-icon:hover {
+  background: #f2f2f2;
+}
+
+
+.google-btn span {
+  font-family: 'Roboto', sans-serif;
 }

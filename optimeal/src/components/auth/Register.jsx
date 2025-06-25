@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from './firebase.js'; // Adjust path based on your project structure
+import { auth } from './firebase.js';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import './Register.css';
 
@@ -18,7 +18,7 @@ const Register = () => {
       // Create user with Firebase
       await createUserWithEmailAndPassword(auth, email, password);
       console.log('User registered successfully!');
-      navigate('/'); // Redirect to home/dashboard after registration
+      navigate('/dashboard'); // Redirect to dashboard after registration
     } catch (err) {
       setError(err.message);
       console.error('Registration error:', err);
@@ -27,8 +27,8 @@ const Register = () => {
 
   return (
     <div className="container">
-      <h2>Register</h2>
-      {error && <p className="error-message">{error}</p>}
+      <h2>Create Your Account</h2>
+      {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
           type="email"

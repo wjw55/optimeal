@@ -1,6 +1,6 @@
 # 🚀 OPTIMEAL: Your Personalized Meal Planner
 
-**WnN Cosmic** | Built with ❤️ using React, Node.js, Firebase & OpenAI
+**WnN Cosmic** | Built using React, Node.js, Firebase & Deepseek
 
 NUS Orbital 2025
 
@@ -20,7 +20,7 @@ Optimeal is a smart meal planner that:
 - Frontend: **React (Next.js)**
 - Backend: **Node.js + Express**
 - Database: **Firebase**
-- AI: **OpenAI API**
+- AI: **Deepseek API**
 
 ---
 

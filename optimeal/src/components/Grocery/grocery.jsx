@@ -192,6 +192,7 @@ const GroceryList = () => {
           <Link to='/dashboard'>Dashboard</Link>
           <Link to='/recipes'>Recipes</Link>
           <Link to="/grocery">Grocery List</Link>
+          <Link to="/social">Social</Link>
           {/*<a href="#">Settings</a>*/ }
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>

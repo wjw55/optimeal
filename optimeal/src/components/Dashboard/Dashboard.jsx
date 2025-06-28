@@ -12,6 +12,7 @@ import { signOut } from 'firebase/auth';
 
 function App() {
   const [isEditing, setIsEditing] = useState(false);
+  const [username, setUsername] = useState("");
   const [age, setAge] = useState("20");
   const [sex, setSex] = useState("Male");
   const [weight, setWeight] = useState("80 kg");
@@ -55,7 +56,13 @@ function App() {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
+          const isIncomplete = !data.username || !data.age || !data.height || !data.weight || !data.goal || !data.activityLevel;
+          if (isIncomplete) {
+            navigate('/complete-profile');
+            return;
+          }
           // Load all profile fields from Firestore
+          setUsername(data.username || "");
           setAge(data.age || "20");
           setSex(data.sex || "Male");
           setHeight(data.height || "180 cm");
@@ -64,6 +71,7 @@ function App() {
           setGoal(data.goal || "Maintain weight");
           setAllergies(data.allergies || []);
           setPreferences(data.preferences || []);
+
           
           // Also load meal plan data if it exists
           if (data.currentMeals) {
@@ -89,6 +97,7 @@ function App() {
 
     const userRef = doc(db, "users", userId);
     const userData = {
+      username,
       age,
       sex,
       height,
@@ -242,7 +251,7 @@ function App() {
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/recipes">Recipes</Link>
           <Link to="/grocery">Grocery List</Link>
-          {/*<a href="#">Social</a>*/}
+          <Link to="/social">Social</Link>
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>
       </div>
@@ -376,6 +385,7 @@ function App() {
 
             {!isEditing ? (
               <div id="profile-content">
+                <p>Username: <span>{username}</span></p>
                 <p>Age: <span>{age}</span></p>
                 <p>Sex: <span>{sex}</span></p>
                 <p>Height: <span>{height}</span></p>
@@ -389,6 +399,10 @@ function App() {
               </div>
             ) : (
               <div id="profile-edit">
+                <p>
+                  <span>Username</span>
+                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+                </p>
                 <p>
                   <span>Age</span>
                   <input type="number" value={age} onChange={(e) => setAge(e.target.value)} />

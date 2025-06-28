@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { auth } from './firebase.js';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import './Register.css';
+import { db } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
+
+
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -11,20 +15,24 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(''); // Clear previous errors
+  e.preventDefault();
+  setError('');
 
-    try {
-      // Create user with Firebase
-      await createUserWithEmailAndPassword(auth, email, password);
-      console.log('User registered successfully!');
-      navigate('/dashboard'); // Redirect to dashboard after registration
-    } catch (err) {
-      setError(err.message);
-      console.error('Registration error:', err);
-    }
-  };
+  try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          createdAt: new Date()
+        });
+
+        navigate('/dashboard');
+      } catch (err) {
+        setError(err.message);
+        console.error('Registration error:', err);
+      }
+    };
   return (
     <div className="container">
       <h2>Create Your Account</h2>

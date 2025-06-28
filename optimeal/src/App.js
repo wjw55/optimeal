@@ -10,6 +10,10 @@ import Recipe from './components/Recipe/Recipe';
 import NewRecipe from './components/Recipe/NewRecipe';
 import ExploreRecipes from './components/Recipe/ExploreRecipes';
 import SavedRecipes from './components/Recipe/SavedRecipes';
+import Social from './components/Social/Social';
+import CompleteProfile from './components/Dashboard/CompleteProfile';
+
+
 
 function App() {
   return (
@@ -20,8 +24,10 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/complete-profile" element={<PrivateRoute><CompleteProfile /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>}/>
           <Route path="/grocery" element={<PrivateRoute><GroceryList /></PrivateRoute>} />
+          <Route path="/social" element={<PrivateRoute><Social /></PrivateRoute>} />
           <Route path="/recipes" element={<PrivateRoute><Recipe /></PrivateRoute>}>
             <Route index element={<NewRecipe />} /> {/* Default view */}
             <Route path="new" element={<NewRecipe />} />

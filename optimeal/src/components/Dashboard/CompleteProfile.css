@@ -1,0 +1,50 @@
+.complete-profile {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 24px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.complete-profile h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+  color: #333;
+}
+
+.complete-profile form {
+  display: flex;
+  flex-direction: column;
+}
+
+.complete-profile label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #444;
+}
+
+.complete-profile input,
+.complete-profile select {
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.complete-profile button {
+  padding: 10px;
+  background-color: #00a86b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.complete-profile button:hover {
+  background-color: #007f54;
+}

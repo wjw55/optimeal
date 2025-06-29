@@ -22,7 +22,7 @@ function Recipe() {
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/recipes">Recipes</Link>
           <Link to="/grocery">Grocery List</Link>
-          <Link to="/social">Social</Link>
+          <Link to="/social">Forum</Link>
           {/*<a href="#">Settings</a>*/ }
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </nav>

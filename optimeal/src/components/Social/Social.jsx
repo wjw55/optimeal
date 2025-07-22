@@ -28,6 +28,7 @@ function ForumPost() {
   const [posts, setPosts] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   const [comments, setComments] = useState({}); // comments per postId
+  
 
   const currentUser = auth.currentUser;
   const getUsernameByUID = async (uid) => {

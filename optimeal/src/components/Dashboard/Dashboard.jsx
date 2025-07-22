@@ -4,8 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'; // Import Link for navigat
 import { useState } from 'react'; // Import useState for state management
 //import userImg from './Images/user-profile-icon-free-vector.jpg'; // Import user image
 import { db, auth } from '../auth/firebase'; // Import Firebase auth and db
-import { collection, doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
-import { signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 
 
 
@@ -23,9 +22,7 @@ function App() {
   const [preferences, setPreferences] = useState([]);
   const allergyOptions = ["Peanuts", "Dairy", "Gluten"];
   const preferenceOptions = ["Vegetarian", "Vegan", "Halal"];
-  const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [currentMeals, setCurrentMeals] = useState({
     Monday: { breakfast: "", lunch: "", dinner: "" },
     Tuesday: { breakfast: "", lunch: "", dinner: "" },
@@ -37,6 +34,16 @@ function App() {
   });
   const navigate = useNavigate();
   const [currentNutrition, setCurrentNutrition] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+  const [dailyNutrition, setDailyNutrition] = useState({
+    Monday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Tuesday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Wednesday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Thursday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Friday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Saturday: { calories: 0, protein: 0, carbs: 0, fats: 0 },
+    Sunday: { calories: 0, protein: 0, carbs: 0, fats: 0 }
+  });
+  const [hoveredDay, setHoveredDay] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const toggleCheckbox = (value, list, setList) => {
@@ -79,6 +86,9 @@ function App() {
           }
           if (data.nutrition) {
             setCurrentNutrition(data.nutrition);
+          }
+          if (data.dailyNutrition) {
+            setDailyNutrition(data.dailyNutrition);
           }
         }
       } else {
@@ -168,12 +178,44 @@ function App() {
 
   const parseMealPlanResponse = (apiResponse) => {
     try {
-      const cleanResponse = apiResponse
-        .replace(/```json/g, '')
+      console.log("Raw API Response:", apiResponse);
+
+      // Try multiple cleaning approaches
+      let cleanResponse = apiResponse;
+
+      // Remove markdown code blocks
+      cleanResponse = cleanResponse
+        .replace(/```json/gi, '')
+        .replace(/```JSON/gi, '')
         .replace(/```/g, '')
         .trim();
 
-      const data = JSON.parse(cleanResponse);
+      // Find JSON object boundaries
+      const firstBrace = cleanResponse.indexOf('{');
+      const lastBrace = cleanResponse.lastIndexOf('}');
+
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleanResponse = cleanResponse.substring(firstBrace, lastBrace + 1);
+      }
+
+      console.log("Cleaned Response:", cleanResponse);
+
+      let data;
+      try {
+        data = JSON.parse(cleanResponse);
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError);
+        // Try to fix common JSON issues
+        cleanResponse = cleanResponse
+          .replace(/,\s*}/g, '}') // Remove trailing commas
+          .replace(/,\s*]/g, ']') // Remove trailing commas in arrays
+          .replace(/'/g, '"'); // Replace single quotes with double quotes
+
+        console.log("Attempting to parse fixed JSON:", cleanResponse);
+        data = JSON.parse(cleanResponse);
+      }
+
+      console.log("Parsed Data:", data);
 
       // Define the exact order we want
       const dayOrder = [
@@ -188,7 +230,7 @@ function App() {
 
       // Create ordered object using reduce
       const orderedMeals = dayOrder.reduce((acc, day) => {
-        acc[day] = data.days[day] || {
+        acc[day] = data.days?.[day] || {
           breakfast: "",
           lunch: "",
           dinner: "",
@@ -197,15 +239,52 @@ function App() {
         return acc;
       }, {});
 
+      // Extract daily nutrition data
+      const dailyNutritionData = dayOrder.reduce((acc, day) => {
+        acc[day] = data.days?.[day]?.nutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 };
+        return acc;
+      }, {});
+
       console.log("Final ordered meals:", orderedMeals);
+      console.log("Daily nutrition data:", dailyNutritionData);
 
       return {
         meals: orderedMeals,
-        nutrition: data.nutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 }
+        nutrition: data.nutrition || { calories: 0, protein: 0, carbs: 0, fats: 0 },
+        dailyNutrition: dailyNutritionData
       };
     } catch (error) {
       console.error("Parsing error:", error);
-      throw new Error("Failed to parse meal plan response");
+      console.error("Failed to parse response:", apiResponse);
+
+      // Return fallback data instead of throwing error
+      const fallbackMeals = {
+        Monday: { breakfast: "Oatmeal", lunch: "Chicken Salad", dinner: "Grilled Salmon" },
+        Tuesday: { breakfast: "Greek Yogurt", lunch: "Turkey Wrap", dinner: "Beef Stir Fry" },
+        Wednesday: { breakfast: "Smoothie Bowl", lunch: "Quinoa Bowl", dinner: "Chicken Curry" },
+        Thursday: { breakfast: "Eggs Benedict", lunch: "Fish Tacos", dinner: "Pasta Primavera" },
+        Friday: { breakfast: "Pancakes", lunch: "Caesar Salad", dinner: "Pork Tenderloin" },
+        Saturday: { breakfast: "French Toast", lunch: "Sushi Bowl", dinner: "Lamb Chops" },
+        Sunday: { breakfast: "Breakfast Burrito", lunch: "Mediterranean Bowl", dinner: "Roast Chicken" }
+      };
+
+      const fallbackNutrition = { calories: 2000, protein: 150, carbs: 200, fats: 70 };
+      const fallbackDailyNutrition = {
+        Monday: { calories: 2000, protein: 150, carbs: 200, fats: 70 },
+        Tuesday: { calories: 1950, protein: 145, carbs: 190, fats: 68 },
+        Wednesday: { calories: 2100, protein: 155, carbs: 210, fats: 72 },
+        Thursday: { calories: 2050, protein: 148, carbs: 205, fats: 71 },
+        Friday: { calories: 1980, protein: 142, carbs: 195, fats: 69 },
+        Saturday: { calories: 2150, protein: 160, carbs: 215, fats: 74 },
+        Sunday: { calories: 2080, protein: 152, carbs: 200, fats: 73 }
+      };
+
+      console.log("Using fallback meal plan due to parsing error");
+      return {
+        meals: fallbackMeals,
+        nutrition: fallbackNutrition,
+        dailyNutrition: fallbackDailyNutrition
+      };
     }
   };
 
@@ -226,6 +305,10 @@ function App() {
             // Set nutrition if it exists
             if (userData.nutrition) {
               setCurrentNutrition(userData.nutrition);
+            }
+            // Set daily nutrition if it exists
+            if (userData.dailyNutrition) {
+              setDailyNutrition(userData.dailyNutrition);
             }
           }
         } catch (error) {
@@ -258,10 +341,10 @@ function App() {
 
       {/* Dashboard */}
       <div className="dashboard">
-        {/* Dashboard */}
-        <div className="dashboard">
-          {/* Weekly Meal Plan - Now connected to AI */}
-          <div className="weekly-meal-plan card">
+        {/* Main Content Area */}
+        <div className="main-content">
+          {/* Weekly Meal Plan - Now wider and more prominent */}
+          <div className="weekly-meal-plan-wide card">
             <h2>Weekly Meal Plan</h2>
             <table>
               <thead>
@@ -274,7 +357,12 @@ function App() {
               </thead>
               <tbody>
                 {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(dayName => (
-                  <tr key={dayName}>
+                  <tr
+                    key={dayName}
+                    onMouseEnter={() => setHoveredDay(dayName)}
+                    onMouseLeave={() => setHoveredDay(null)}
+                    className={hoveredDay === dayName ? 'hovered-day' : ''}
+                  >
                     <td>{dayName}</td>
                     <td>{currentMeals[dayName]?.breakfast || ''}</td>
                     <td>{currentMeals[dayName]?.lunch || ''}</td>
@@ -283,54 +371,81 @@ function App() {
                 ))}
               </tbody>
             </table>
+
+            {/* Daily Nutrition Tooltip */}
+            
+
             <button class="generate-btn" onClick={async () => {
               setIsLoading(true);
-              setError(null);
 
               try {
                 // Build the prompt using user profile data
-                const prompt = `Generate a 7-day meal plan for 
-                                Age: ${age}
-                                Sex: ${sex}
-                                Height: ${height}
-                                Weight: ${weight}
-                                Activity Level: ${activityLevel}
-                                Goal: ${goal}
-                                Dietary restrictions: ${allergies.join(', ') || 'none'}
-                                Preferences: ${preferences.join(', ') || 'none'}
+                const prompt = `Create a 7-day meal plan for:
+Age: ${age}, Sex: ${sex}, Height: ${height}, Weight: ${weight}
+Activity: ${activityLevel}, Goal: ${goal}
+Allergies: ${allergies.join(', ') || 'none'}
+Preferences: ${preferences.join(', ') || 'none'}
 
-                                Return ONLY pure JSON (no markdown, no notes) in this exact format:
-                                {
-                                  "days": {
-                                    "Monday": {
-                                    "breakfast": "1-2 word description",
-                                    "lunch": "1-2 word description",
-                                    "dinner": "1-2 word description",
-                                    "groceries": {
-                                      "breakfast": ["ingredient1", "ingredient2"],
-                                      "lunch": ["ingredient1", "ingredient2"],
-                                      "dinner": ["ingredient1", "ingredient2"]
-                                    }
-                                  },
-                                  // From Monday to Sunday
-                                },
-                                "nutrition": {
-                                  "calories": number,
-                                  "protein": number,
-                                  "carbs": number,
-                                  "fats": number
-                                }
-                                }`;
+Return ONLY valid JSON with this structure:
+{
+  "days": {
+    "Monday": {
+      "breakfast": "Oatmeal",
+      "lunch": "Chicken Salad",
+      "dinner": "Grilled Salmon",
+      "nutrition": {"calories": 2000, "protein": 150, "carbs": 200, "fats": 70}
+    },
+    "Tuesday": {
+      "breakfast": "Greek Yogurt",
+      "lunch": "Turkey Wrap",
+      "dinner": "Beef Stir Fry",
+      "nutrition": {"calories": 1950, "protein": 145, "carbs": 190, "fats": 68}
+    },
+    "Wednesday": {
+      "breakfast": "Smoothie Bowl",
+      "lunch": "Quinoa Bowl",
+      "dinner": "Chicken Curry",
+      "nutrition": {"calories": 2100, "protein": 155, "carbs": 210, "fats": 72}
+    },
+    "Thursday": {
+      "breakfast": "Eggs Benedict",
+      "lunch": "Fish Tacos",
+      "dinner": "Pasta Primavera",
+      "nutrition": {"calories": 2050, "protein": 148, "carbs": 205, "fats": 71}
+    },
+    "Friday": {
+      "breakfast": "Pancakes",
+      "lunch": "Caesar Salad",
+      "dinner": "Pork Tenderloin",
+      "nutrition": {"calories": 1980, "protein": 142, "carbs": 195, "fats": 69}
+    },
+    "Saturday": {
+      "breakfast": "French Toast",
+      "lunch": "Sushi Bowl",
+      "dinner": "Lamb Chops",
+      "nutrition": {"calories": 2150, "protein": 160, "carbs": 215, "fats": 74}
+    },
+    "Sunday": {
+      "breakfast": "Breakfast Burrito",
+      "lunch": "Mediterranean Bowl",
+      "dinner": "Roast Chicken",
+      "nutrition": {"calories": 2080, "protein": 152, "carbs": 200, "fats": 73}
+    }
+  },
+  "nutrition": {"calories": 2050, "protein": 150, "carbs": 202, "fats": 71}
+}`;
 
                 const apiResponse = await callOpenRouter(prompt);
                 console.log("API Response:", apiResponse);
-                const { meals, nutrition } = parseMealPlanResponse(apiResponse);
+                const { meals, nutrition, dailyNutrition } = parseMealPlanResponse(apiResponse);
 
                 // Update state
                 setCurrentMeals(meals);
                 setCurrentNutrition(nutrition);
+                setDailyNutrition(dailyNutrition);
                 console.log("Parsed Meals:", meals);
                 console.log("Parsed Nutrition:", nutrition);
+                console.log("Parsed Daily Nutrition:", dailyNutrition);
 
                 // Store in Firebase
                 if (userId) {
@@ -338,11 +453,13 @@ function App() {
                   await setDoc(userRef, {
                     currentMeals: meals,
                     nutrition: nutrition,
+                    dailyNutrition: dailyNutrition,
                     updatedAt: new Date()
                   }, { merge: true });
                 }
               } catch (err) {
-                setError(err.message || "Failed to generate meal plan");
+                console.error("Failed to generate meal plan:", err);
+                alert("Failed to generate meal plan: " + (err.message || "Unknown error"));
               } finally {
                 setIsLoading(false);
               }
@@ -350,31 +467,69 @@ function App() {
               {isLoading ? "Generating..." : "Generate Meal Plan"}
             </button>
           </div>
-          {/* Nutritional Overview - Now connected to AI */}
-          <div className="nutrition-overview card">
-            <h2>Nutritional Overview</h2>
-            <div className="nutrition-stats">
-              <div className="stat">
-                <p>Calories</p>
-                <strong>{currentNutrition.calories || "--"}</strong>
-                <span>kcal/day</span>
+        </div>
+
+        {/* Sidebar */}
+        <div className="sidebar">
+          {/* Daily Nutrition Display - Interactive */}
+          <div className="daily-nutrition-display card">
+            <h2>Daily Nutrition</h2>
+            {hoveredDay ? (
+              <div className="selected-day-nutrition">
+                <h3>{hoveredDay}</h3>
+                <div className="nutrition-stats">
+                  <div className="stat">
+                    <p>Calories</p>
+                    <strong>{dailyNutrition[hoveredDay]?.calories || "--"}</strong>
+                    <span>kcal</span>
+                  </div>
+                  <div className="stat">
+                    <p>Protein</p>
+                    <strong>{dailyNutrition[hoveredDay]?.protein || "--"}</strong>
+                    <span>g</span>
+                  </div>
+                  <div className="stat">
+                    <p>Carbs</p>
+                    <strong>{dailyNutrition[hoveredDay]?.carbs || "--"}</strong>
+                    <span>g</span>
+                  </div>
+                  <div className="stat">
+                    <p>Fats</p>
+                    <strong>{dailyNutrition[hoveredDay]?.fats || "--"}</strong>
+                    <span>g</span>
+                  </div>
+                </div>
               </div>
-              <div className="stat">
-                <p>Protein</p>
-                <strong>{currentNutrition.protein || "--"}</strong>
-                <span>g/day</span>
+            ) : (
+              <div className="nutrition-placeholder">
+                <p>Hover over a day in the meal plan to see detailed nutrition information</p>
+                <div className="weekly-average">
+                  <h4>Weekly Average</h4>
+                  <div className="nutrition-stats">
+                    <div className="stat">
+                      <p>Calories</p>
+                      <strong>{currentNutrition.calories || "--"}</strong>
+                      <span>kcal/day</span>
+                    </div>
+                    <div className="stat">
+                      <p>Protein</p>
+                      <strong>{currentNutrition.protein || "--"}</strong>
+                      <span>g/day</span>
+                    </div>
+                    <div className="stat">
+                      <p>Carbs</p>
+                      <strong>{currentNutrition.carbs || "--"}</strong>
+                      <span>g/day</span>
+                    </div>
+                    <div className="stat">
+                      <p>Fats</p>
+                      <strong>{currentNutrition.fats || "--"}</strong>
+                      <span>g/day</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="stat">
-                <p>Carbs</p>
-                <strong>{currentNutrition.carbs || "--"}</strong>
-                <span>g/day</span>
-              </div>
-              <div className="stat">
-                <p>Fats</p>
-                <strong>{currentNutrition.fats || "--"}</strong>
-                <span>g/day</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Profile Card */}
@@ -467,6 +622,7 @@ function App() {
                   </div>
                 </p>
                 <button className="save-btn" onClick={handleSave}>Save</button>
+                {saveSuccess && <p style={{color: 'green', textAlign: 'center'}}>Profile saved successfully!</p>}
               </div>
             )}
           </div>

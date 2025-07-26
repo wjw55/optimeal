@@ -46,6 +46,14 @@ function App() {
   const [hoveredDay, setHoveredDay] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Goal tracking states
+  const [currentWeight, setCurrentWeight] = useState('');
+  const [targetWeight, setTargetWeight] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [personalGoals, setPersonalGoals] = useState([]);
+  const [newGoal, setNewGoal] = useState('');
+  const [goalProgress, setGoalProgress] = useState({});
+
   const toggleCheckbox = (value, list, setList) => {
     if (list.includes(value)) {
       setList(list.filter(item => item !== value));
@@ -90,6 +98,20 @@ function App() {
           if (data.dailyNutrition) {
             setDailyNutrition(data.dailyNutrition);
           }
+
+          // Load goal tracking data
+          if (data.personalGoals) {
+            setPersonalGoals(data.personalGoals);
+          }
+          if (data.currentWeight) {
+            setCurrentWeight(data.currentWeight);
+          }
+          if (data.targetWeight) {
+            setTargetWeight(data.targetWeight);
+          }
+          if (data.targetDate) {
+            setTargetDate(data.targetDate);
+          }
         }
       } else {
         // User is not authenticated, redirect to login
@@ -98,6 +120,51 @@ function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Goal tracking functions
+  const addPersonalGoal = () => {
+    if (newGoal.trim()) {
+      const goal = {
+        id: Date.now(),
+        text: newGoal.trim(),
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      setPersonalGoals([...personalGoals, goal]);
+      setNewGoal('');
+      saveGoalsToFirebase([...personalGoals, goal]);
+    }
+  };
+
+  const toggleGoalCompletion = (goalId) => {
+    const updatedGoals = personalGoals.map(goal =>
+      goal.id === goalId ? { ...goal, completed: !goal.completed } : goal
+    );
+    setPersonalGoals(updatedGoals);
+    saveGoalsToFirebase(updatedGoals);
+  };
+
+  const deleteGoal = (goalId) => {
+    const updatedGoals = personalGoals.filter(goal => goal.id !== goalId);
+    setPersonalGoals(updatedGoals);
+    saveGoalsToFirebase(updatedGoals);
+  };
+
+  const saveGoalsToFirebase = async (goals) => {
+    if (!userId) return;
+    try {
+      const userRef = doc(db, "users", userId);
+      await setDoc(userRef, {
+        personalGoals: goals,
+        currentWeight,
+        targetWeight,
+        targetDate
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error saving goals:", error);
+    }
+  };
+
 
   const handleSave = async () => {
     if (!userId) {
@@ -116,6 +183,10 @@ function App() {
       goal,
       allergies,
       preferences,
+      personalGoals,
+      currentWeight,
+      targetWeight,
+      targetDate,
       updatedAt: new Date()
     };
 
@@ -466,6 +537,83 @@ Return ONLY valid JSON with this structure:
             }}>
               {isLoading ? "Generating..." : "Generate Meal Plan"}
             </button>
+          </div>
+
+          {/* Goal Tracker */}
+          <div className="goal-tracker card">
+            <h2>Goal Tracker</h2>
+
+            {/* Weight Goal Section */}
+            <div className="weight-goal-section">
+              <h3>Weight Goal</h3>
+              <div className="weight-inputs">
+                <div className="input-group">
+                  <label>Current Weight (kg)</label>
+                  <input
+                    type="number"
+                    value={currentWeight}
+                    onChange={(e) => setCurrentWeight(e.target.value)}
+                    placeholder="Enter current weight"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Target Weight (kg)</label>
+                  <input
+                    type="number"
+                    value={targetWeight}
+                    onChange={(e) => setTargetWeight(e.target.value)}
+                    placeholder="Enter target weight"
+                  />
+                </div>
+                <div className="input-group">
+                  <label>Target Date</label>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Goals Section */}
+            <div className="personal-goals-section">
+              <h3>Personal Goals</h3>
+              <div className="add-goal">
+                <input
+                  type="text"
+                  value={newGoal}
+                  onChange={(e) => setNewGoal(e.target.value)}
+                  placeholder="Add a new goal..."
+                  onKeyDown={(e) => e.key === 'Enter' && addPersonalGoal()}
+                />
+                <button onClick={addPersonalGoal} className="add-goal-btn">Add Goal</button>
+              </div>
+
+              <div className="goals-list">
+                {personalGoals.map(goal => (
+                  <div key={goal.id} className={`goal-item ${goal.completed ? 'completed' : ''}`}>
+                    <div className="goal-content">
+                      <input
+                        type="checkbox"
+                        checked={goal.completed}
+                        onChange={() => toggleGoalCompletion(goal.id)}
+                      />
+                      <span className="goal-text">{goal.text}</span>
+                    </div>
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      className="delete-goal-btn"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {personalGoals.length === 0 && (
+                  <p className="no-goals">No goals yet. Add your first goal above!</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

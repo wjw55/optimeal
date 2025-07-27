@@ -11,7 +11,7 @@ import {
   orderBy,
   serverTimestamp,
   getDoc,
-  setDoc
+  
 } from 'firebase/firestore';
 import {
   ref,
@@ -28,7 +28,14 @@ function ForumPost() {
   const [posts, setPosts] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   const [comments, setComments] = useState({}); // comments per postId
-  
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    navigate('/');
+  };
+
 
   const currentUser = auth.currentUser;
   const getUsernameByUID = async (uid) => {
@@ -141,44 +148,51 @@ function ForumPost() {
   useEffect(() => {
     fetchAllPosts();
   }, []);
-
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      navigate('/');
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
-
-  const navigate = useNavigate();
+  const filteredPosts = posts.filter(post =>
+  post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  post.description.toLowerCase().includes(searchQuery.toLowerCase())
+);
 
 
-  return (
-    <div>
-      <div className="navbar">
-        <div className="branding">
-          <h1>OPTIMEAL</h1>
-        </div>
+return (
+  <div className="App">
+    {/* Navbar */}
+    <div className="navbar">
+      <div className="branding">
+        <h1>OPTIMEAL</h1>
+      </div>
+      <nav>
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/recipes">Recipes</Link>
+        <Link to="/grocery">Grocery List</Link>
+        <Link to="/social">Forum</Link>
+        <button className="logout-btn" onClick={handleLogout}>Logout</button>
+      </nav>
+    </div>
 
-        <nav>
-          <Link to='/dashboard'>Dashboard</Link>
-          <Link to='/recipes'>Recipes</Link>
-          <Link to="/grocery">Grocery List</Link>
-          <Link to="/social">Forum</Link>
-          {/*<a href="#">Settings</a>*/}
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
-        </nav>
+    {/* Forum Page */}
+    <div className="forum-post-container">
+      <h2>Create Forum Post</h2>
+      <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+      <button onClick={handleSubmitPost}>Submit Post</button>
+
+      {/* 🔍 Search bar */}
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search posts..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
-      <div className="forum-post-container">
-        <h2>Create Forum Post</h2>
-        <input className="title-input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-        <input type="file" onChange={(e) => setImage(e.target.files[0])} />
-        <button onClick={handleSubmitPost}>Submit Post</button>
-
-        {posts.map(post => (
+      {/* Display filtered posts or "No results" */}
+      {searchQuery && filteredPosts.length === 0 ? (
+        <p>No results found for "{searchQuery}".</p>
+      ) : (
+        filteredPosts.map(post => (
           <div key={post.id} className="post">
             <h3>{post.title}</h3>
             <p>{post.description}</p>
@@ -188,7 +202,11 @@ function ForumPost() {
               <button onClick={() => handleDeletePost(post.id)} className="delete-btn">
                 Delete Post
               </button>
+              </button>
             )}
+            <button onClick={() => toggleLike(post.id, post.likes)}>
+              {post.likes?.includes(currentUser.uid) ? 'Unlike' : 'Like'} ({post.likes?.length || 0})
+            </button>
             <button onClick={() => toggleLike(post.id, post.likes)}>
               {post.likes?.includes(currentUser.uid) ? 'Unlike' : 'Like'} ({post.likes?.length || 0})
             </button>
@@ -208,10 +226,13 @@ function ForumPost() {
               <button onClick={() => handleComment(post.id)}>Post Comment</button>
             </div>
           </div>
-        ))}
-      </div>
+        ))
+      )}
     </div>
-  );
+  </div>
+);
+
+
 }
 
 export default ForumPost;

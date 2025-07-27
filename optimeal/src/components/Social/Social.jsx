@@ -202,7 +202,6 @@ return (
               <button onClick={() => handleDeletePost(post.id)} className="delete-btn">
                 Delete Post
               </button>
-              </button>
             )}
             <button onClick={() => toggleLike(post.id, post.likes)}>
               {post.likes?.includes(currentUser.uid) ? 'Unlike' : 'Like'} ({post.likes?.length || 0})

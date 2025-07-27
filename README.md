@@ -1,29 +1,42 @@
 # 🚀 OPTIMEAL: Your Personalized Meal Planner
 
-**WnN Cosmic** | Built using React, Node.js, Firebase & Deepseek
+**Team:** WnN Cosmic  
+**NUS Orbital 2025**  
+**Tech Stack:** React · Node.js · Firebase · Deepseek
 
-NUS Orbital 2025
+---
+
+## 🌐 Deployed Server
+
+> https://optimeal-bbabb.web.app/
 
 ---
 
 ## 🧠 Overview
 
-Optimeal is a smart meal planner that:
-- 📅 Plans your meals based on your goals
-- 🧮 Calculates calories & macros
-- 🍱 Suggests recipes using AI
+Optimeal is a smart, AI-powered meal planning web application that helps users achieve their health and nutrition goals. It provides:
+
+- 📅 Personalized meal planning based on your dietary preferences and goals  
+- 🧮 Calorie and macronutrient (protein, carbs, fats) breakdown  
+- 🍱 AI-generated recipe suggestions based on ingredients and needs  
+- 🛒 Grocery list management linked to your weekly plan  
+- 📊 Nutritional insights and daily tracking
 
 ---
 
 ## 🛠️ Tech Stack
 
-- Frontend: **React (Next.js)**
-- Backend: **Node.js + Express**
-- Database: **Firebase**
-- AI: **Deepseek API**
+- **Frontend:** React   
+- **Backend:** Node.js + Express  
+- **Database & Auth:** Firebase (Firestore, Authentication)  
+- **AI Integration:** Deepseek API  
 
 ---
 
-## Author
-- **Neal Ng Seng Yew** 
-- **Wang Jiawei**
+## 👥 Authors
+
+- **Wang Jiawei**  
+- **Neal Ng Seng Yew**
+
+---
+

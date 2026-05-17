@@ -1,74 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import './grocery.css';
-import { db, auth } from '../auth/firebase'
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../auth/firebase';
+import AppNav from '../shared/AppNav';
+import {
+  DAYS,
+  GROCERY_CATEGORIES,
+  MEAL_TYPES,
+  addGroceryItem,
+  buildGroceryItem,
+  clearPurchasedGroceries,
+  deleteGroceryItem,
+  groupGroceriesByCategory,
+  mealDisplayName,
+  normalizeMealPlan,
+  updateGroceryItem
+} from '../../utils/mealPlanUtils';
+import './grocery.css';
 
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const meals = ['breakfast', 'lunch', 'dinner'];
+const blankForm = {
+  name: '',
+  quantity: '',
+  unit: '',
+  category: 'Other',
+  sourceDay: 'Monday',
+  sourceMeal: 'dinner'
+};
 
-const GroceryList = () => {
-  const [expandedMeals, setExpandedMeals] = useState({});
-  const [selectedDay, setSelectedDay] = useState('all');
-  const [selectedMeal, setSelectedMeal] = useState('breakfast');
+function GroceryList() {
   const [mealPlan, setMealPlan] = useState(null);
-  const [itemName, setItemName] = useState('');
-  const [itemCount, setItemCount] = useState('');
+  const [selectedDay, setSelectedDay] = useState('all');
+  const [form, setForm] = useState(blankForm);
+  const [editingId, setEditingId] = useState(null);
+  const [editDraft, setEditDraft] = useState({ name: '', quantity: '', unit: '', category: 'Other' });
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     const fetchMealPlan = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
       try {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (user) {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-
-          if (userSnap.exists() && userSnap.data().currentMeals) {
-            const data = userSnap.data().currentMeals;
-            console.log("Fetched meal plan:", data);
-
-            // Ensure each day has a groceries object
-            const updatedMealPlan = { ...data };
-            days.forEach(day => {
-              if (!updatedMealPlan[day]) {
-                updatedMealPlan[day] = { breakfast: "", lunch: "", dinner: "", groceries: {} };
-              }
-              if (!updatedMealPlan[day].groceries) {
-                updatedMealPlan[day].groceries = {};
-              }
-              meals.forEach(meal => {
-                if (!updatedMealPlan[day].groceries[meal]) {
-                  updatedMealPlan[day].groceries[meal] = [];
-                }
-              });
-            });
-
-            setMealPlan(updatedMealPlan);
-          } else {
-            // Initialize empty meal plan if none exists
-            const emptyMealPlan = days.reduce((acc, day) => {
-              acc[day] = {
-                breakfast: "",
-                lunch: "",
-                dinner: "",
-                groceries: meals.reduce((mealAcc, meal) => {
-                  mealAcc[meal] = [];
-                  return mealAcc;
-                }, {})
-              };
-              return acc;
-            }, {});
-
-            setMealPlan(emptyMealPlan);
-            // Save the empty structure to Firebase
-            await setDoc(userRef, { currentMeals: emptyMealPlan }, { merge: true });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching meal plan:", error);
+        const userSnap = await getDoc(doc(db, 'users', user.uid));
+        const normalized = normalizeMealPlan(userSnap.data()?.currentMeals);
+        setMealPlan(normalized);
+      } catch (fetchError) {
+        console.error('Error fetching grocery list:', fetchError);
+        setError('We could not load your grocery list. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -77,252 +56,221 @@ const GroceryList = () => {
     fetchMealPlan();
   }, []);
 
-  const toggleMeal = (day, meal) => {
-    const key = `${day}-${meal}`;
-    setExpandedMeals(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
+  const groupedGroceries = useMemo(() => {
+    if (!mealPlan) return {};
+    return groupGroceriesByCategory(mealPlan, selectedDay);
+  }, [mealPlan, selectedDay]);
 
-  const handleAddItem = async () => {
-    if (!itemName || !itemCount || selectedDay === 'all' || !mealPlan) return;
+  const totalItems = useMemo(() => {
+    return Object.values(groupedGroceries).reduce((count, items) => count + items.length, 0);
+  }, [groupedGroceries]);
 
-    try {
-      const newMealPlan = JSON.parse(JSON.stringify(mealPlan)); // Deep clone to avoid reference issues
+  const saveMealPlan = async (nextPlan, message) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-      // Ensure the groceries structure exists
-      if (!newMealPlan[selectedDay].groceries) {
-        newMealPlan[selectedDay].groceries = {};
-      }
+    setMealPlan(nextPlan);
+    await setDoc(doc(db, 'users', user.uid), {
+      currentMeals: nextPlan,
+      updatedAt: new Date()
+    }, { merge: true });
 
-      if (!newMealPlan[selectedDay].groceries[selectedMeal]) {
-        newMealPlan[selectedDay].groceries[selectedMeal] = [];
-      }
-
-      // Add new item (without AI: prefix to indicate user-added)
-      newMealPlan[selectedDay].groceries[selectedMeal].push(`${itemName} (${itemCount})`);
-
-      // Update state
-      setMealPlan(newMealPlan);
-
-      // Update database
-      await updateDatabase(newMealPlan);
-
-      // Reset form
-      setItemName('');
-      setItemCount('');
-    } catch (error) {
-      console.error("Error adding item:", error);
+    if (message) {
+      setNotice(message);
+      setTimeout(() => setNotice(''), 2500);
     }
   };
 
-  const handleDeleteItem = async (day, meal, index) => {
-    try {
-      const newMealPlan = JSON.parse(JSON.stringify(mealPlan)); // Deep clone
-      newMealPlan[day].groceries[meal].splice(index, 1);
+  const handleAddItem = async (event) => {
+    event.preventDefault();
+    if (!form.name.trim() || !mealPlan) return;
 
-      // Update state
-      setMealPlan(newMealPlan);
-
-      // Update database
-      await updateDatabase(newMealPlan);
-    } catch (error) {
-      console.error("Error deleting item:", error);
-    }
+    const item = buildGroceryItem(form);
+    const nextPlan = addGroceryItem(mealPlan, item);
+    await saveMealPlan(nextPlan, 'Grocery item added.');
+    setForm((current) => ({ ...blankForm, sourceDay: current.sourceDay, sourceMeal: current.sourceMeal }));
   };
 
-  const handleToggleItem = async (day, meal, index) => {
-    try {
-      const newMealPlan = JSON.parse(JSON.stringify(mealPlan)); // Deep clone
-      const item = newMealPlan[day].groceries[meal][index];
-
-      // Toggle checked status by adding/removing "✓ " prefix
-      if (item.startsWith("✓ ")) {
-        newMealPlan[day].groceries[meal][index] = item.substring(2);
-      } else {
-        newMealPlan[day].groceries[meal][index] = "✓ " + item;
-      }
-
-      // Update state
-      setMealPlan(newMealPlan);
-
-      // Update database
-      await updateDatabase(newMealPlan);
-    } catch (error) {
-      console.error("Error toggling item:", error);
-    }
+  const handleToggleItem = async (item) => {
+    const nextPlan = updateGroceryItem(mealPlan, item.id, { checked: !item.checked });
+    await saveMealPlan(nextPlan);
   };
 
-  const updateDatabase = async (updatedMealPlan) => {
-    try {
-      const user = auth.currentUser;
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        console.log("Saving to Firebase:", updatedMealPlan);
-        await setDoc(userRef, { currentMeals: updatedMealPlan }, { merge: true });
-        console.log("Successfully saved to Firebase");
-      }
-    } catch (error) {
-      console.error("Error updating database:", error);
-    }
+  const handleDeleteItem = async (itemId) => {
+    const nextPlan = deleteGroceryItem(mealPlan, itemId);
+    await saveMealPlan(nextPlan, 'Grocery item deleted.');
   };
 
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      navigate('/');
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
+  const handleClearPurchased = async () => {
+    const nextPlan = clearPurchasedGroceries(mealPlan);
+    await saveMealPlan(nextPlan, 'Purchased items cleared.');
+  };
+
+  const startEditing = (item) => {
+    setEditingId(item.id);
+    setEditDraft({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category
+    });
+  };
+
+  const saveEdit = async (itemId) => {
+    if (!editDraft.name.trim()) return;
+
+    const nextPlan = updateGroceryItem(mealPlan, itemId, {
+      name: editDraft.name.trim(),
+      quantity: editDraft.quantity,
+      unit: editDraft.unit,
+      category: editDraft.category
+    });
+
+    await saveMealPlan(nextPlan, 'Grocery item updated.');
+    setEditingId(null);
   };
 
   if (loading) {
-    return <div className="loading">Loading grocery list...</div>;
+    return (
+      <div>
+        <AppNav />
+        <main className="grocery-page">
+          <p className="grocery-state">Loading grocery list...</p>
+        </main>
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="navbar">
-        <div className="branding">
-          <h1>OPTIMEAL</h1>
-        </div>
-
-        <nav>
-          <Link to='/dashboard'>Dashboard</Link>
-          <Link to='/recipes'>Recipes</Link>
-          <Link to="/grocery">Grocery List</Link>
-          <Link to="/social">Forum</Link>
-          {/*<a href="#">Settings</a>*/ }
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
-        </nav>
-      </div>
-
-      <h1 className="title">Grocery List</h1>
-
-      <div className="grocery-form">
-        {/* First row: Item and Count */}
-        <div className="form-row">
-          <input
-            type="text"
-            placeholder="Item Name"
-            value={itemName}
-            onChange={(e) => setItemName(e.target.value)}
-            className="item-input"
-          />
-          <input
-            type="number"
-            placeholder="Count"
-            value={itemCount}
-            onChange={(e) => setItemCount(e.target.value)}
-            className="count-input"
-          />
-        </div>
-        
-        {/* Second row: Day and Meal selects */}
-        <div className="form-row">
-          <select
-            value={selectedDay}
-            onChange={(e) => setSelectedDay(e.target.value)}
-            className="day-meal-select"
-          >
-            <option value="all" disabled>Select Day</option>
-            {days.map(day => (
-              <option key={day} value={day}>{day}</option>
-            ))}
-          </select>
-          
-          <select
-            value={selectedMeal}
-            onChange={(e) => setSelectedMeal(e.target.value)}
-            className="day-meal-select"
-          >
-            {meals.map(meal => (
-              <option key={meal} value={meal}>{meal.charAt(0).toUpperCase() + meal.slice(1)}</option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Third row: Add button centered */}
-        <div className="button-container">
-          <button className="add-btn" onClick={handleAddItem}>Add</button>
-        </div>
-      </div>
-
-      <select
-        className="day-select"
-        value={selectedDay === 'all' ? 'all' : selectedDay}
-        onChange={(e) => setSelectedDay(e.target.value)}
-      >
-        <option value="all">All Days</option>
-        {days.map(day => (
-          <option key={day} value={day}>{day}</option>
-        ))}
-      </select>
-
-      {mealPlan && days
-        .filter(day => selectedDay === 'all' || day === selectedDay)
-        .map(day => (
-          <div className="box" key={day}>
-            <h2>{day}</h2>
-            <hr />
-            {meals.map(meal => {
-              const key = `${day}-${meal}`;
-              const groceryList = mealPlan[day]?.groceries?.[meal] || [];
-
-              return (
-                <div key={key}>
-                  <button
-                    className="meal-box"
-                    onClick={() => toggleMeal(day, meal)}
-                  >
-                    <h4>{meal.charAt(0).toUpperCase() + meal.slice(1)}</h4>
-                  </button>
-                  <div className={`meal-content ${expandedMeals[key] ? 'expanded' : ''}`}>
-                    {/* AI Generated Meal */}
-                    {mealPlan[day]?.[meal] && (
-                      <div className="ai-meal-box">
-                        <h5>AI Generated Meal</h5>
-                        <p>{mealPlan[day]?.[meal]}</p>
-                      </div>
-                    )}
-                    
-                    {/* Grocery Items */}
-                    <div className="user-ingredients-box">
-                      <h5>Grocery Items</h5>
-                      {groceryList.length > 0 ? (
-                        <ul className="grocery-items">
-                          {groceryList.map((item, index) => (
-                            <li 
-                              key={index} 
-                              className={item.startsWith("✓ ") ? "checked" : ""}
-                              onClick={() => handleToggleItem(day, meal, index)}
-                            >
-                              <span>{item.startsWith("✓ ") ? item.substring(2) : item}</span>
-                              <button 
-                                className="delete-item" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteItem(day, meal, index);
-                                }}
-                              >
-                                ×
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="empty-message">No items added yet</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      <AppNav />
+      <main className="grocery-page">
+        <section className="grocery-hero">
+          <div>
+            <p className="grocery-kicker">Shopping checklist</p>
+            <h1>Grocery List</h1>
+            <p>Structured items grouped by category, with checked state stored separately from the item name.</p>
           </div>
-        ))}
+          <button className="grocery-button grocery-button--secondary" type="button" onClick={handleClearPurchased} disabled={!totalItems}>
+            Clear purchased
+          </button>
+        </section>
+
+        {error && <div className="grocery-alert grocery-alert--error">{error}</div>}
+        {notice && <div className="grocery-alert">{notice}</div>}
+
+        <section className="grocery-layout">
+          <form className="grocery-form" onSubmit={handleAddItem}>
+            <h2>Add grocery item</h2>
+            <label>
+              Item name
+              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Chicken breast" required />
+            </label>
+            <div className="grocery-form__grid">
+              <label>
+                Quantity
+                <input value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} placeholder="2" />
+              </label>
+              <label>
+                Unit
+                <input value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })} placeholder="pieces" />
+              </label>
+            </div>
+            <label>
+              Category
+              <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
+                {GROCERY_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
+              </select>
+            </label>
+            <div className="grocery-form__grid">
+              <label>
+                Source day
+                <select value={form.sourceDay} onChange={(event) => setForm({ ...form, sourceDay: event.target.value })}>
+                  {DAYS.map((day) => <option key={day}>{day}</option>)}
+                </select>
+              </label>
+              <label>
+                Source meal
+                <select value={form.sourceMeal} onChange={(event) => setForm({ ...form, sourceMeal: event.target.value })}>
+                  {MEAL_TYPES.map((meal) => <option key={meal} value={meal}>{mealDisplayName(meal)}</option>)}
+                </select>
+              </label>
+            </div>
+            <button className="grocery-button grocery-button--primary" type="submit">Add item</button>
+          </form>
+
+          <section className="grocery-list-panel">
+            <div className="grocery-list-toolbar">
+              <div>
+                <p className="grocery-kicker">Current list</p>
+                <h2>{totalItems} item{totalItems === 1 ? '' : 's'}</h2>
+              </div>
+              <label>
+                Filter day
+                <select value={selectedDay} onChange={(event) => setSelectedDay(event.target.value)}>
+                  <option value="all">All days</option>
+                  {DAYS.map((day) => <option key={day}>{day}</option>)}
+                </select>
+              </label>
+            </div>
+
+            {!totalItems ? (
+              <div className="grocery-empty">
+                <h3>No grocery items yet.</h3>
+                <p>Add ingredients from your meal plan or create an item manually.</p>
+              </div>
+            ) : (
+              <div className="grocery-category-grid">
+                {GROCERY_CATEGORIES.map((category) => {
+                  const items = groupedGroceries[category] || [];
+                  if (!items.length) return null;
+
+                  return (
+                    <section className="grocery-category" key={category}>
+                      <h3>{category}</h3>
+                      <ul>
+                        {items.map((item) => (
+                          <li className={item.checked ? 'is-checked' : ''} key={item.id}>
+                            {editingId === item.id ? (
+                              <div className="grocery-edit-row">
+                                <input value={editDraft.name} onChange={(event) => setEditDraft({ ...editDraft, name: event.target.value })} aria-label="Item name" />
+                                <input value={editDraft.quantity} onChange={(event) => setEditDraft({ ...editDraft, quantity: event.target.value })} aria-label="Quantity" />
+                                <input value={editDraft.unit} onChange={(event) => setEditDraft({ ...editDraft, unit: event.target.value })} aria-label="Unit" />
+                                <select value={editDraft.category} onChange={(event) => setEditDraft({ ...editDraft, category: event.target.value })} aria-label="Category">
+                                  {GROCERY_CATEGORIES.map((option) => <option key={option}>{option}</option>)}
+                                </select>
+                                <button type="button" onClick={() => saveEdit(item.id)}>Save</button>
+                                <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
+                              </div>
+                            ) : (
+                              <>
+                                <label className="grocery-item-main">
+                                  <input type="checkbox" checked={item.checked} onChange={() => handleToggleItem(item)} />
+                                  <span>
+                                    <strong>{item.name}</strong>
+                                    <small>{item.sourceDay} · {mealDisplayName(item.sourceMeal)}</small>
+                                  </span>
+                                </label>
+                                <span className="grocery-quantity">{item.quantity} {item.unit}</span>
+                                <div className="grocery-item-actions">
+                                  <button type="button" onClick={() => startEditing(item)}>Edit</button>
+                                  <button type="button" onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                                </div>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </section>
+      </main>
     </div>
   );
-};
+}
 
 export default GroceryList;

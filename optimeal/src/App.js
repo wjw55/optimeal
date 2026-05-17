@@ -22,6 +22,7 @@ function App() {
         <Routes>
           {/* Main routes */}
           <Route path="/" element={<Welcome />} />
+          <Route path="/demo" element={<Dashboard demoMode />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/complete-profile" element={<PrivateRoute><CompleteProfile /></PrivateRoute>} />

@@ -1,54 +1,26 @@
-/**
- * @jest-environment node
- */
-global.fetch = require('node-fetch');
+import { buildProfileForSave, normalizeProfile, profileIsComplete } from '../utils/profileUtils';
 
-const { initializeApp } = require('firebase/app');
-const {
-  getAuth,
-  createUserWithEmailAndPassword,
-  connectAuthEmulator
-} = require('firebase/auth');
-const {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  connectFirestoreEmulator
-} = require('firebase/firestore');
-
-const firebaseConfig = {
-  apiKey: 'fake-api-key',
-  authDomain: 'localhost',
-  projectId: 'optimeal-bbabb',
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-beforeAll(() => {
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
-});
-
-test('User can register and profile is stored in Firestore', async () => {
-  const randomId = Math.floor(Math.random() * 100000);
-  const email = `testuser${randomId}@example.com`;
-  const password = 'test1234';
-
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = userCredential.user.uid;
-
-  const userRef = doc(db, 'users', uid);
-  await setDoc(userRef, {
+test('new profile data is normalized before saving', () => {
+  const draftProfile = normalizeProfile({
     username: 'TestUser',
-    preferences: {
-      vegetarian: true,
-    },
+    age: '25',
+    heightCm: '170',
+    weightKg: '62',
+    goal: 'Maintain weight',
+    activityLevel: 'Moderate',
+    dietType: 'Vegetarian',
+    allergies: ['Peanuts'],
+    mealsPerDay: '3',
+    servings: '2'
   });
 
-  const savedDoc = await getDoc(userRef);
-  expect(savedDoc.exists()).toBe(true);
-  expect(savedDoc.data().username).toBe('TestUser');
+  expect(profileIsComplete(draftProfile)).toBe(true);
+
+  const payload = buildProfileForSave(draftProfile);
+  expect(payload.username).toBe('TestUser');
+  expect(payload.heightCm).toBe(170);
+  expect(payload.weightKg).toBe(62);
+  expect(payload.preferences).toEqual(['Vegetarian']);
+  expect(payload.mealsPerDay).toBe(3);
+  expect(payload.servings).toBe(2);
 });

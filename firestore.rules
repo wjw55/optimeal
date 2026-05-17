@@ -1,25 +1,90 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
 
-    // Users can read and write ONLY their own profile
+    function owns(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function hasText(field) {
+      return request.resource.data[field] is string
+        && request.resource.data[field].size() > 0;
+    }
+
+    // Private profile, meal plan, grocery, saved recipe, and goal data.
+    // Meal plan and grocery writes are allowed only on the signed-in user's own doc.
+    // The external Vercel AI endpoint verifies Firebase Auth before returning
+    // validated plans. The React client then writes meal plans back to the
+    // signed-in user's own document through these rules.
+    // The app supports old and new profile fields, so validation stays broad here.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if owns(userId);
+      allow create: if owns(userId);
+      allow update: if owns(userId);
+      allow delete: if owns(userId);
     }
 
-    // Recipes can be read by anyone authenticated, but only created by the user
+    // Community recipes are readable by signed-in users.
+    // Only the author can create, update, or delete their own recipe document.
     match /recipes/{recipeId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.resource.data.authorId == request.auth.uid;
-    }
-    match /forumPosts/{postId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if signedIn();
 
-      // Comments nested under each forum post
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && hasText('title');
+
+      allow update: if signedIn()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && hasText('title');
+
+      allow delete: if signedIn()
+        && resource.data.authorId == request.auth.uid;
+    }
+
+    // Community posts are author-owned.
+    // Non-authors may only update the likes array, not overwrite post content.
+    match /forumPosts/{postId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && hasText('title')
+        && hasText('description')
+        && request.resource.data.likes is list;
+
+      allow update: if signedIn()
+        && (
+          (
+            resource.data.userId == request.auth.uid
+            && request.resource.data.userId == resource.data.userId
+          )
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        );
+
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+
       match /comments/{commentId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+        allow read: if signedIn();
+
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && hasText('text');
+
+        allow update: if signedIn()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+          && hasText('text');
+
+        allow delete: if signedIn()
+          && (
+            resource.data.userId == request.auth.uid
+            || get(/databases/$(database)/documents/forumPosts/$(postId)).data.userId == request.auth.uid
+          );
       }
     }
   }

@@ -25,7 +25,6 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
       const user = result.user;
       console.log("Google login successful", user);
       navigate('/dashboard');

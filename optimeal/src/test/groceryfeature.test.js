@@ -1,74 +1,35 @@
-/**
- * @jest-environment node
- */
-global.fetch = require('node-fetch');
-global.Headers = fetch.Headers;
-global.Request = fetch.Request;
-global.Response = fetch.Response;
+import {
+  addGroceryItem,
+  buildGroceryItem,
+  createEmptyMealPlan,
+  groupGroceriesByCategory,
+  updateGroceryItem
+} from '../utils/mealPlanUtils';
 
-const { initializeApp } = require('firebase/app');
-const {
-  getAuth,
-  createUserWithEmailAndPassword,
-  connectAuthEmulator
-} = require('firebase/auth');
-const {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  connectFirestoreEmulator
-} = require('firebase/firestore');
+test('adds structured grocery items without encoding checked state in the name', () => {
+  const plan = createEmptyMealPlan();
+  const item = buildGroceryItem({
+    name: 'Broccoli',
+    quantity: 2,
+    unit: 'heads',
+    category: 'Produce',
+    sourceDay: 'Tuesday',
+    sourceMeal: 'lunch'
+  });
 
-const firebaseConfig = {
-  apiKey: 'fake-key',
-  authDomain: 'localhost',
-  projectId: 'optimeal-bbabb',
-};
+  const updatedPlan = addGroceryItem(plan, item);
+  const grouped = groupGroceriesByCategory(updatedPlan, 'Tuesday');
+  expect(grouped.Produce[0]).toMatchObject({
+    name: 'Broccoli',
+    quantity: 2,
+    unit: 'heads',
+    checked: false,
+    sourceDay: 'Tuesday',
+    sourceMeal: 'lunch'
+  });
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-beforeAll(() => {
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
-});
-
-test('adds grocery item to Tuesday lunch and persists to Firestore', async () => {
-  // 1. Create test user
-  const email = `grocery${Date.now()}@test.com`;
-  const password = 'test1234';
-  const userCred = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = userCred.user.uid;
-  const userRef = doc(db, "users", uid);
-
-  // 2. Seed Firestore with a minimal currentMeals structure
-  const blankPlan = {
-    Tuesday: {
-      breakfast: "Oats",
-      lunch: "Salad",
-      dinner: "Soup",
-      groceries: {
-        breakfast: [],
-        lunch: [],
-        dinner: []
-      }
-    }
-  };
-  await setDoc(userRef, { currentMeals: blankPlan });
-
-  // 3. Simulate `handleAddItem()` logic
-  const planSnap = await getDoc(userRef);
-  const plan = planSnap.data().currentMeals;
-
-  plan.Tuesday.groceries.lunch.push("Broccoli (2)");
-
-  await setDoc(userRef, { currentMeals: plan }, { merge: true });
-
-  // 4. Read back and verify
-  const updated = await getDoc(userRef);
-  const updatedLunch = updated.data().currentMeals.Tuesday.groceries.lunch;
-
-  expect(updatedLunch).toContain("Broccoli (2)");
+  const checkedPlan = updateGroceryItem(updatedPlan, item.id, { checked: true });
+  const checkedItem = groupGroceriesByCategory(checkedPlan, 'Tuesday').Produce[0];
+  expect(checkedItem.name).toBe('Broccoli');
+  expect(checkedItem.checked).toBe(true);
 });

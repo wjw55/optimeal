@@ -6,6 +6,4 @@
     }
   },
   "buildCommand": ""
-}git add vercel.json
-git commit -m "Configure Vercel API-only deployment"
-git push
+}

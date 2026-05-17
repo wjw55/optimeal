@@ -9,7 +9,8 @@ import {
   DIET_TYPES,
   buildProfileForSave,
   normalizeProfile,
-  toggleValue
+  toggleValue,
+  validateProfile
 } from '../../utils/profileUtils';
 import './CompleteProfile.css';
 
@@ -36,12 +37,13 @@ function CompleteProfile() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const profileForSave = buildProfileForSave(profile);
-    if (!profileForSave.username || !profileForSave.age || !profileForSave.heightCm || !profileForSave.weightKg) {
-      setError('Please complete your username, age, height, and weight.');
+    const validation = validateProfile(profile);
+    if (!validation.valid) {
+      setError(validation.message);
       return;
     }
 
+    const profileForSave = buildProfileForSave(profile);
     await setDoc(doc(db, 'users', user.uid), {
       ...profileForSave,
       height: deleteField(),
@@ -63,6 +65,10 @@ function CompleteProfile() {
         {error && <div className="complete-profile__error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
+          <div className="complete-profile__section-heading">
+            <h2>Basic info</h2>
+            <p>Used only to estimate meal targets and keep your plan organized.</p>
+          </div>
           <label>
             Username
             <input value={profile.username} onChange={(event) => updateProfileField('username', event.target.value)} required />
@@ -92,6 +98,10 @@ function CompleteProfile() {
             </label>
           </div>
 
+          <div className="complete-profile__section-heading">
+            <h2>Goal and activity</h2>
+            <p>These fields help shape portions and the weekly nutrition pattern.</p>
+          </div>
           <div className="complete-profile__grid">
             <label>
               Activity level
@@ -125,6 +135,10 @@ function CompleteProfile() {
             </label>
           </div>
 
+          <div className="complete-profile__section-heading">
+            <h2>Diet and restrictions</h2>
+            <p>Allergy handling is best-effort. Always review generated ingredients before shopping or cooking.</p>
+          </div>
           <CheckboxGroup
             label="Allergies"
             options={ALLERGY_OPTIONS}
@@ -149,6 +163,10 @@ function CompleteProfile() {
             onToggle={(value) => toggleProfileArrayValue('preferredCuisines', value)}
           />
 
+          <div className="complete-profile__section-heading">
+            <h2>Cooking preferences and targets</h2>
+            <p>Optional fields can be left blank if you are unsure.</p>
+          </div>
           <div className="complete-profile__grid">
             <label>
               Cooking skill

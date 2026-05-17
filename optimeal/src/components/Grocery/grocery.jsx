@@ -7,10 +7,11 @@ import {
   GROCERY_CATEGORIES,
   MEAL_TYPES,
   addGroceryItem,
+  aggregateGroceriesByCategory,
   buildGroceryItem,
   clearPurchasedGroceries,
   deleteGroceryItem,
-  groupGroceriesByCategory,
+  formatGroceryGroupsAsText,
   mealDisplayName,
   normalizeMealPlan,
   updateGroceryItem
@@ -58,7 +59,7 @@ function GroceryList() {
 
   const groupedGroceries = useMemo(() => {
     if (!mealPlan) return {};
-    return groupGroceriesByCategory(mealPlan, selectedDay);
+    return aggregateGroceriesByCategory(mealPlan, selectedDay);
   }, [mealPlan, selectedDay]);
 
   const totalItems = useMemo(() => {
@@ -92,12 +93,17 @@ function GroceryList() {
   };
 
   const handleToggleItem = async (item) => {
-    const nextPlan = updateGroceryItem(mealPlan, item.id, { checked: !item.checked });
+    const nextPlan = updateManyGroceryItems(mealPlan, item, { checked: !item.checked });
     await saveMealPlan(nextPlan);
   };
 
-  const handleDeleteItem = async (itemId) => {
-    const nextPlan = deleteGroceryItem(mealPlan, itemId);
+  const handleToggleAlreadyHave = async (item) => {
+    const nextPlan = updateManyGroceryItems(mealPlan, item, { alreadyHave: !item.alreadyHave });
+    await saveMealPlan(nextPlan, item.alreadyHave ? 'Moved to need-to-buy.' : 'Marked as already have.');
+  };
+
+  const handleDeleteItem = async (item) => {
+    const nextPlan = deleteManyGroceryItems(mealPlan, item);
     await saveMealPlan(nextPlan, 'Grocery item deleted.');
   };
 
@@ -107,6 +113,12 @@ function GroceryList() {
   };
 
   const startEditing = (item) => {
+    if (item.sourceIds?.length > 1) {
+      setNotice('This row combines duplicate items. Edit the source items separately.');
+      setTimeout(() => setNotice(''), 3000);
+      return;
+    }
+
     setEditingId(item.id);
     setEditDraft({
       name: item.name,
@@ -130,6 +142,24 @@ function GroceryList() {
     setEditingId(null);
   };
 
+  const handleCopyList = async () => {
+    const text = formatGroceryGroupsAsText(groupedGroceries);
+    if (!text) return;
+
+    try {
+      await copyTextToClipboard(text);
+      setNotice('Grocery list copied.');
+    } catch (copyError) {
+      console.error('Could not copy grocery list:', copyError);
+      setNotice('Copy failed. You can still print the list.');
+    }
+    setTimeout(() => setNotice(''), 2500);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div>
@@ -149,11 +179,19 @@ function GroceryList() {
           <div>
             <p className="grocery-kicker">Shopping checklist</p>
             <h1>Grocery List</h1>
-            <p>Structured items grouped by category, with checked state stored separately from the item name.</p>
+            <p>Aggregated by category where units match, with purchased and already-have status stored separately from item names.</p>
           </div>
-          <button className="grocery-button grocery-button--secondary" type="button" onClick={handleClearPurchased} disabled={!totalItems}>
-            Clear purchased
-          </button>
+          <div className="grocery-hero__actions">
+            <button className="grocery-button grocery-button--secondary" type="button" onClick={handleCopyList} disabled={!totalItems}>
+              Copy list
+            </button>
+            <button className="grocery-button grocery-button--secondary" type="button" onClick={handlePrint} disabled={!totalItems}>
+              Print
+            </button>
+            <button className="grocery-button grocery-button--secondary" type="button" onClick={handleClearPurchased} disabled={!totalItems}>
+              Clear purchased
+            </button>
+          </div>
         </section>
 
         {error && <div className="grocery-alert grocery-alert--error">{error}</div>}
@@ -217,7 +255,7 @@ function GroceryList() {
             {!totalItems ? (
               <div className="grocery-empty">
                 <h3>No grocery items yet.</h3>
-                <p>Add ingredients from your meal plan or create an item manually.</p>
+                <p>Generate a meal plan first or add an item manually.</p>
               </div>
             ) : (
               <div className="grocery-category-grid">
@@ -230,7 +268,7 @@ function GroceryList() {
                       <h3>{category}</h3>
                       <ul>
                         {items.map((item) => (
-                          <li className={item.checked ? 'is-checked' : ''} key={item.id}>
+                          <li className={`${item.checked ? 'is-checked' : ''} ${item.alreadyHave ? 'is-pantry' : ''}`} key={item.id}>
                             {editingId === item.id ? (
                               <div className="grocery-edit-row">
                                 <input value={editDraft.name} onChange={(event) => setEditDraft({ ...editDraft, name: event.target.value })} aria-label="Item name" />
@@ -248,13 +286,19 @@ function GroceryList() {
                                   <input type="checkbox" checked={item.checked} onChange={() => handleToggleItem(item)} />
                                   <span>
                                     <strong>{item.name}</strong>
-                                    <small>{item.sourceDay} · {mealDisplayName(item.sourceMeal)}</small>
+                                    <small>
+                                      {formatSourceLabel(item)}
+                                      {item.sourceIds?.length > 1 ? ` - combined ${item.sourceIds.length} items` : ''}
+                                    </small>
                                   </span>
                                 </label>
                                 <span className="grocery-quantity">{item.quantity} {item.unit}</span>
                                 <div className="grocery-item-actions">
+                                  <button type="button" onClick={() => handleToggleAlreadyHave(item)}>
+                                    {item.alreadyHave ? 'Need to buy' : 'Already have'}
+                                  </button>
                                   <button type="button" onClick={() => startEditing(item)}>Edit</button>
-                                  <button type="button" onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                                  <button type="button" onClick={() => handleDeleteItem(item)}>Delete</button>
                                 </div>
                               </>
                             )}
@@ -271,6 +315,42 @@ function GroceryList() {
       </main>
     </div>
   );
+}
+
+function updateManyGroceryItems(plan, item, updater) {
+  return (item.sourceIds || [item.id]).reduce((nextPlan, itemId) => {
+    return updateGroceryItem(nextPlan, itemId, updater);
+  }, plan);
+}
+
+function deleteManyGroceryItems(plan, item) {
+  return (item.sourceIds || [item.id]).reduce((nextPlan, itemId) => {
+    return deleteGroceryItem(nextPlan, itemId);
+  }, plan);
+}
+
+function formatSourceLabel(item) {
+  const days = item.sourceDays?.length ? item.sourceDays.join(', ') : item.sourceDay;
+  const meals = item.sourceMeals?.length
+    ? item.sourceMeals.map(mealDisplayName).join(', ')
+    : item.sourceMeal ? mealDisplayName(item.sourceMeal) : '';
+  return [days, meals].filter(Boolean).join(' - ');
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textarea);
 }
 
 export default GroceryList;

@@ -57,6 +57,44 @@ export function buildProfileForSave(profile) {
   };
 }
 
+export function validateProfile(profile, { requireBasics = true } = {}) {
+  const normalized = normalizeProfile(profile);
+
+  if (requireBasics && !normalized.username.trim()) {
+    return { valid: false, message: 'Please add a username.' };
+  }
+
+  if (requireBasics && !inRange(normalized.age, 13, 100)) {
+    return { valid: false, message: 'Please enter an age between 13 and 100.' };
+  }
+
+  if (requireBasics && !inRange(normalized.heightCm, 80, 250)) {
+    return { valid: false, message: 'Please enter height in centimeters between 80 and 250.' };
+  }
+
+  if (requireBasics && !inRange(normalized.weightKg, 25, 350)) {
+    return { valid: false, message: 'Please enter weight in kilograms between 25 and 350.' };
+  }
+
+  if (!inRange(normalized.mealsPerDay, 1, 6)) {
+    return { valid: false, message: 'Meals per day should be between 1 and 6.' };
+  }
+
+  if (!inRange(normalized.servings, 1, 8)) {
+    return { valid: false, message: 'Servings should be between 1 and 8.' };
+  }
+
+  if (normalized.targetCalories && !inRange(normalized.targetCalories, 1000, 6000)) {
+    return { valid: false, message: 'Optional target calories should be between 1000 and 6000.' };
+  }
+
+  if (normalized.targetProtein && !inRange(normalized.targetProtein, 0, 350)) {
+    return { valid: false, message: 'Optional protein target should be between 0 and 350 grams.' };
+  }
+
+  return { valid: true, message: '' };
+}
+
 export function toggleValue(list, value) {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
 }
@@ -65,6 +103,11 @@ function parseNumber(value) {
   if (value === undefined || value === null || value === '') return '';
   const number = Number(String(value).replace(/[^\d.]/g, ''));
   return Number.isFinite(number) && number > 0 ? number : '';
+}
+
+function inRange(value, min, max) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= min && number <= max;
 }
 
 function firstPreference(preferences) {

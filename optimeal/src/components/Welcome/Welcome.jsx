@@ -35,6 +35,9 @@ function Welcome() {
             <Link to="/register" className="welcome-button welcome-button--secondary">Create Account</Link>
             <Link to="/login" className="welcome-button welcome-button--ghost">Login</Link>
           </div>
+          <p className="welcome-safety-note">
+            Planning support, not medical advice. Always review ingredients for allergies and dietary needs.
+          </p>
         </div>
 
         <div className="product-preview" aria-label="Optimeal dashboard preview">
@@ -101,6 +104,30 @@ function Welcome() {
           <h2>Smart Grocery List</h2>
           <p>Turn planned meals into a categorized shopping checklist.</p>
         </article>
+      </section>
+
+      <section className="how-it-works" aria-label="How Optimeal works">
+        <div>
+          <p className="welcome-kicker">How it works</p>
+          <h2>From profile to grocery list</h2>
+        </div>
+        <div className="how-it-works__steps">
+          <article>
+            <span>1</span>
+            <h3>Complete your profile</h3>
+            <p>Add goals, diet preferences, allergies, cooking time, budget, and household servings.</p>
+          </article>
+          <article>
+            <span>2</span>
+            <h3>Generate your week</h3>
+            <p>Optimeal sends your signed-in request to the secure AI endpoint and validates the result.</p>
+          </article>
+          <article>
+            <span>3</span>
+            <h3>Shop from your list</h3>
+            <p>Review nutrition, inspect meals, and use the categorized grocery list for the week.</p>
+          </article>
+        </div>
       </section>
     </main>
   );

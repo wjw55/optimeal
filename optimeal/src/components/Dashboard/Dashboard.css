@@ -7,7 +7,8 @@
 
 .dashboard-state,
 .demo-banner,
-.dashboard-alert {
+.dashboard-alert,
+.demo-story {
   max-width: 1160px;
   margin: 0 auto 18px;
 }
@@ -24,9 +25,38 @@
 }
 
 .demo-banner {
+  align-items: center;
   background: #edf7f2;
   color: #145d49;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
   font-weight: 760;
+}
+
+.demo-banner p {
+  color: #3b6658;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 4px 0 0;
+}
+
+.demo-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.demo-banner__actions a {
+  background: #ffffff;
+  border: 1px solid #cbe0d8;
+  border-radius: 8px;
+  color: #145d49;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 9px 10px;
+  text-decoration: none;
 }
 
 .dashboard-alert {
@@ -126,7 +156,7 @@
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -179,6 +209,39 @@
 
 .dashboard-panel {
   padding: clamp(18px, 3vw, 24px);
+}
+
+.demo-story {
+  margin-bottom: 18px;
+}
+
+.demo-story__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.demo-story__grid article {
+  background: #f6f8f7;
+  border: 1px solid #e6ede9;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.demo-story__grid h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.demo-story__grid p,
+.demo-story__cta {
+  color: #5d6d67;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.demo-story__cta {
+  margin-top: 14px;
 }
 
 .panel-heading {
@@ -541,6 +604,7 @@ textarea:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .demo-banner,
   .panel-heading,
   .meal-line,
   .profile-summary div,
@@ -552,6 +616,15 @@ textarea:focus-visible {
 
   .panel-heading {
     display: flex;
+  }
+
+  .demo-banner__actions {
+    justify-content: stretch;
+  }
+
+  .demo-banner__actions a {
+    text-align: center;
+    width: 100%;
   }
 
   .meal-line button,

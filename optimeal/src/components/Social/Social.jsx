@@ -64,7 +64,14 @@ function Social() {
     }
 
     try {
-      const uploadedUrl = await handleImageUpload();
+      let uploadedUrl = '';
+      try {
+        uploadedUrl = await handleImageUpload();
+      } catch (uploadError) {
+        console.error('Image upload failed; continuing with text-only post:', uploadError);
+        setNotice('Image upload is unavailable, so the post will be shared without an image.');
+      }
+
       const username = await getUsernameByUID(currentUser.uid);
 
       await addDoc(collection(db, 'forumPosts'), {
@@ -189,7 +196,7 @@ function Social() {
 
         <section className="community-layout">
           <form className="community-post-form" onSubmit={handleSubmitPost}>
-            <h2>Create Post</h2>
+            <h2>Share Recipe</h2>
             <label>
               Title
               <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="High-protein lunch idea" />
@@ -202,7 +209,7 @@ function Social() {
               Image
               <input type="file" accept="image/*" onChange={(event) => setImage(event.target.files[0])} />
             </label>
-            <button type="submit">Submit Post</button>
+            <button type="submit">Share Post</button>
           </form>
 
           <section className="community-feed">

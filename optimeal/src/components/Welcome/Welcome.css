@@ -91,6 +91,14 @@
   margin-top: 30px;
 }
 
+.welcome-safety-note {
+  color: #64736e;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 16px 0 0;
+  max-width: 560px;
+}
+
 .welcome-button {
   align-items: center;
   border: 1px solid #cfd9d4;
@@ -241,7 +249,7 @@
   gap: 16px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 clamp(20px, 4vw, 32px) 64px;
+  padding: 0 clamp(20px, 4vw, 32px) 28px;
 }
 
 .welcome-features article {
@@ -269,9 +277,61 @@
   margin: 0;
 }
 
+.how-it-works {
+  display: grid;
+  gap: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px clamp(20px, 4vw, 32px) 72px;
+}
+
+.how-it-works h2 {
+  font-size: clamp(1.6rem, 4vw, 2.5rem);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.how-it-works__steps {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.how-it-works__steps article {
+  background: #ffffff;
+  border: 1px solid #dde6e1;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.how-it-works__steps span {
+  align-items: center;
+  background: #e8f3ed;
+  border-radius: 999px;
+  color: #0f7a5b;
+  display: inline-flex;
+  font-weight: 900;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.how-it-works__steps h3 {
+  color: #12312b;
+  font-size: 1.05rem;
+  margin: 14px 0 8px;
+}
+
+.how-it-works__steps p {
+  color: #5b6a65;
+  line-height: 1.55;
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .welcome-hero,
-  .welcome-features {
+  .welcome-features,
+  .how-it-works__steps {
     grid-template-columns: 1fr;
   }
 

@@ -13,7 +13,8 @@ import {
   buildProfileForSave,
   normalizeProfile,
   profileIsComplete,
-  toggleValue
+  toggleValue,
+  validateProfile
 } from '../../utils/profileUtils';
 import {
   DAYS,
@@ -30,6 +31,16 @@ import {
 } from '../../utils/mealPlanUtils';
 import './Dashboard.css';
 
+const GENERATION_STAGES = [
+  'Checking your profile...',
+  'Generating meals with the AI model...',
+  'Balancing nutrition across the week...',
+  'Organizing grocery ingredients...',
+  'Almost ready. Free models can take a little while...'
+];
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 function Dashboard({ demoMode = false }) {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
@@ -44,6 +55,7 @@ function Dashboard({ demoMode = false }) {
   const [focusedMeal, setFocusedMeal] = useState(null);
   const [personalGoals, setPersonalGoals] = useState([]);
   const [newGoal, setNewGoal] = useState('');
+  const [lastGeneratedAt, setLastGeneratedAt] = useState('');
 
   useEffect(() => {
     if (demoMode) {
@@ -72,6 +84,7 @@ function Dashboard({ demoMode = false }) {
         setProfile(normalizeProfile(data));
         setMealPlan(normalizeMealPlan(data.currentMeals));
         setPersonalGoals(Array.isArray(data.personalGoals) ? data.personalGoals : []);
+        setLastGeneratedAt(formatFirestoreDate(data.lastMealPlanGeneratedAt));
       } catch (error) {
         console.error('Error loading dashboard:', error);
         setGenerationError('We could not load your dashboard. Please refresh and try again.');
@@ -82,6 +95,30 @@ function Dashboard({ demoMode = false }) {
 
     return () => unsubscribe();
   }, [demoMode, navigate]);
+
+  useEffect(() => {
+    if (!generating) return undefined;
+
+    setGenerationMessage(GENERATION_STAGES[0]);
+    const timers = GENERATION_STAGES.slice(1).map((message, index) =>
+      setTimeout(() => setGenerationMessage(message), [2200, 9000, 18000, 34000][index])
+    );
+
+    return () => timers.forEach((timerId) => clearTimeout(timerId));
+  }, [generating]);
+
+  useEffect(() => {
+    if (!focusedMeal) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setFocusedMeal(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedMeal]);
 
   const weeklyAverage = useMemo(() => calculateWeeklyAverage(mealPlan), [mealPlan]);
   const plannedMeals = useMemo(() => countPlannedMeals(mealPlan), [mealPlan]);
@@ -114,6 +151,12 @@ function Dashboard({ demoMode = false }) {
     if (demoMode || !userId) return;
 
     try {
+      const validation = validateProfile(profile);
+      if (!validation.valid) {
+        setSaveMessage(validation.message);
+        return;
+      }
+
       const profileForSave = buildProfileForSave(profile);
       await setDoc(doc(db, 'users', userId), {
         ...profileForSave,
@@ -134,9 +177,9 @@ function Dashboard({ demoMode = false }) {
   const handleGenerateWeek = async () => {
     if (demoMode || !userId) return;
 
+    const totalStartedAt = now();
     setGenerating(true);
     setGenerationError('');
-    setGenerationMessage('Generating your 7-day plan...');
 
     try {
       const {
@@ -148,13 +191,23 @@ function Dashboard({ demoMode = false }) {
       const dayNutrition = dailyNutrition || buildDailyNutrition(generatedPlan);
 
       setMealPlan(generatedPlan);
+      setGenerationMessage('Saving your week...');
+      const saveStartedAt = now();
+      const savedAt = new Date();
+
       await setDoc(doc(db, 'users', userId), {
         currentMeals: generatedPlan,
         nutrition: weeklyNutrition,
         dailyNutrition: dayNutrition,
-        lastMealPlanGeneratedAt: new Date(),
-        updatedAt: new Date()
+        lastMealPlanGeneratedAt: savedAt,
+        updatedAt: savedAt
       }, { merge: true });
+      setLastGeneratedAt(formatDisplayDate(savedAt));
+
+      logDashboardGenerationTiming({
+        firestoreSaveMs: elapsed(saveStartedAt),
+        totalClickToSavedMs: elapsed(totalStartedAt)
+      });
 
       setGenerationMessage('Your week is ready.');
       setTimeout(() => setGenerationMessage(''), 3500);
@@ -217,7 +270,18 @@ function Dashboard({ demoMode = false }) {
       <AppNav demoMode={demoMode} />
       <main className="dashboard-page">
         {demoMode && (
-          <p className="demo-banner">Demo data — sign in to generate and save your own plan.</p>
+          <section className="demo-banner" aria-label="Demo guide">
+            <div>
+              <strong>Demo data - explore before signing in.</strong>
+              <p>Explore the dashboard, meal plan, nutrition, groceries, and saved recipe without creating an account.</p>
+            </div>
+            <div className="demo-banner__actions">
+              <Link to="/register">Create Account</Link>
+              <Link to="/login">Login</Link>
+              <a href="#demo-grocery-preview">View Grocery Preview</a>
+              <a href="#demo-recipe-preview">View Saved Recipe Preview</a>
+            </div>
+          </section>
         )}
 
         <section className="dashboard-hero">
@@ -253,17 +317,41 @@ function Dashboard({ demoMode = false }) {
           <SummaryCard label="Estimated daily calories" value={weeklyAverage.calories || '--'} detail="Average kcal/day" />
           <SummaryCard label="Protein target" value={`${weeklyAverage.protein || profile.targetProtein || '--'}g`} detail="Average or profile target" />
           <SummaryCard label="Grocery items" value={demoMode ? demoGroceryItems.length : groceryCount} detail="Grouped shopping list" />
+          <SummaryCard label="Last generated" value={demoMode ? 'Demo' : (lastGeneratedAt || '--')} detail={demoMode ? 'Sample weekly plan' : 'Saved plan timestamp'} />
         </section>
+
+        {demoMode && (
+          <section className="dashboard-panel demo-story" aria-label="What this demo shows">
+            <div className="panel-heading">
+              <div>
+                <p>What this demo shows</p>
+                <h2>A complete planning loop</h2>
+              </div>
+            </div>
+            <div className="demo-story__grid">
+              <DemoStoryItem title="Personalized weekly meal plan" copy="Seven days of meals shaped around a high-protein demo profile." />
+              <DemoStoryItem title="Nutrition summary" copy="Calories and macros are summarized so the week is easier to scan." />
+              <DemoStoryItem title="Categorized groceries" copy="Ingredients become a practical shopping checklist grouped by category." />
+              <DemoStoryItem title="Saved recipe preview" copy="Recipes connect back to the weekly planning flow." />
+              <DemoStoryItem title="Profile preferences" copy="Diet, allergies, cooking time, budget, and appliances guide generation for signed-in users." />
+            </div>
+            <p className="demo-story__cta">Want your own plan? Create an account to generate and save personalized meals.</p>
+          </section>
+        )}
 
         <section className="dashboard-layout">
           <div className="dashboard-main">
-            <section className="dashboard-panel">
+            <section className="dashboard-panel" id="demo-grocery-preview">
               <div className="panel-heading">
                 <div>
                   <p>Weekly meal plan</p>
                   <h2>Your 7-day plan</h2>
                 </div>
-                {!demoMode && (
+                {demoMode ? (
+                  <Link className="dashboard-button dashboard-button--secondary" to="/register">
+                    Sign in to generate your own plan
+                  </Link>
+                ) : (
                   <button className="dashboard-button dashboard-button--secondary" type="button" onClick={handleGenerateWeek} disabled={generating}>
                     {generating ? 'Working...' : 'Generate My Week'}
                   </button>
@@ -294,17 +382,26 @@ function Dashboard({ demoMode = false }) {
             </section>
 
             {focusedMeal?.meal?.name && (
-              <section className="dashboard-panel meal-detail-panel" aria-live="polite">
+              <section
+                className="dashboard-panel meal-detail-panel"
+                aria-labelledby="meal-detail-title"
+                aria-live="polite"
+                role="dialog"
+              >
                 <div className="panel-heading">
                   <div>
                     <p>{focusedMeal.day} {mealDisplayName(focusedMeal.type)}</p>
-                    <h2>{focusedMeal.meal.name}</h2>
+                    <h2 id="meal-detail-title">{focusedMeal.meal.name}</h2>
                   </div>
                   <button className="icon-button" type="button" onClick={() => setFocusedMeal(null)} aria-label="Close meal details">
                     Close
                   </button>
                 </div>
                 <p>{focusedMeal.meal.reason || 'Meal details are available from the saved plan.'}</p>
+                <p className="muted-copy">
+                  Source: {focusedMeal.day} {mealDisplayName(focusedMeal.type)}
+                  {focusedMeal.meal.prepMinutes ? ` - ${focusedMeal.meal.prepMinutes} min prep` : ''}
+                </p>
                 <div className="macro-row">
                   <Macro label="Calories" value={focusedMeal.meal.calories} unit="kcal" />
                   <Macro label="Protein" value={focusedMeal.meal.protein} unit="g" />
@@ -339,7 +436,7 @@ function Dashboard({ demoMode = false }) {
               <NutritionBar label="Fats" value={weeklyAverage.fats} target={80} unit="g" />
             </section>
 
-            <section className="dashboard-panel">
+            <section className="dashboard-panel" id="demo-recipe-preview">
               <div className="panel-heading">
                 <div>
                   <p>Preferences</p>
@@ -445,12 +542,51 @@ function buildDailyNutrition(plan) {
   }, {});
 }
 
+function formatFirestoreDate(value) {
+  if (!value) return '';
+  if (typeof value.toDate === 'function') {
+    return formatDisplayDate(value.toDate());
+  }
+  return formatDisplayDate(value);
+}
+
+function formatDisplayDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function now() {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function elapsed(startedAt) {
+  return Math.round(now() - startedAt);
+}
+
+function logDashboardGenerationTiming(timings) {
+  if (!isDevelopment) return;
+  console.info('optimeal.dashboardGeneration.timing', timings);
+}
+
 function SummaryCard({ label, value, detail }) {
   return (
     <article className="summary-card">
       <span>{label}</span>
       <strong>{value}</strong>
       <p>{detail}</p>
+    </article>
+  );
+}
+
+function DemoStoryItem({ title, copy }) {
+  return (
+    <article>
+      <h3>{title}</h3>
+      <p>{copy}</p>
     </article>
   );
 }
@@ -472,7 +608,7 @@ function DayMealCard({ day, dayPlan, onFocusMeal }) {
                 <strong>{meal.name || 'Not planned'}</strong>
                 {meal.name && (
                   <small>
-                    {meal.calories || '--'} kcal · {meal.protein || '--'}g protein
+                    {meal.calories || '--'} kcal - {meal.protein || '--'}g protein
                   </small>
                 )}
               </div>

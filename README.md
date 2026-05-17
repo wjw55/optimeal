@@ -22,6 +22,7 @@ Suggested paths:
 - `docs/screenshots/community-recipes.png`
 
 Screenshots should be captured from the deployed app after the v2 polish deployment.
+Do not add mock or stock screenshots; use real captures from the deployed or local app.
 
 ## Problem
 
@@ -75,6 +76,8 @@ React client
 ```
 
 Direct AI provider keys are not used in the React app. The OpenRouter key belongs only in Vercel environment variables.
+
+The v2 AI path is intentionally split: Firebase Hosting/Auth/Firestore keep the product app on Firebase, while Vercel handles the authenticated `/api/generateMealPlan` endpoint. The endpoint verifies Firebase ID tokens, calls OpenRouter server-side, validates AI JSON with Zod, applies a daily generation limit, and returns only structured meal-plan data to React. Demo mode uses local sample data and never calls the AI backend.
 
 ## Demo Mode
 
@@ -179,6 +182,10 @@ Authorization: Bearer <firebase_id_token>
 
 Demo mode does not call the AI endpoint and continues to use local sample data.
 
+## AI Model Notes
+
+`OPENROUTER_MODEL` is configured in Vercel, so the model can be changed without rebuilding React. `openrouter/free` is useful for free testing, but free routing can be slower or less consistent. A pinned faster model may reduce routing variability if the project later moves beyond free testing. Do not hardcode a paid model in the frontend.
+
 ## Local AI Testing
 
 1. Install frontend dependencies:
@@ -280,7 +287,9 @@ Back up Firestore before running with `--apply`. The script uses Firebase Admin 
 
 - Add meal swap and regenerate-day actions once backend generation is available.
 - Add screenshot assets to this README after deployment.
-- Add more focused component tests for demo mode, grocery normalization, and recipe filters.
+- Capture real screenshots in `docs/screenshots/` after the next deployed UI pass.
+- Add more focused component tests for demo mode and recipe filters.
+- Add profile-hash plan reuse so users can choose a previous plan before regenerating the same profile.
 - Optionally strengthen production rate limiting and monitoring around the Vercel endpoint.
 
 ## Suggested Repo Topics

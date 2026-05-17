@@ -22,6 +22,13 @@
   margin-bottom: 20px;
 }
 
+.grocery-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .grocery-kicker {
   color: #23705d;
   font-size: 0.78rem;
@@ -197,6 +204,16 @@
   text-decoration: line-through;
 }
 
+.grocery-category li.is-pantry {
+  background: #f7fbf8;
+}
+
+.grocery-category li.is-pantry .grocery-item-main small::after {
+  color: #23705d;
+  content: " - already have";
+  font-weight: 800;
+}
+
 .grocery-item-main {
   align-items: center;
   display: flex;
@@ -261,11 +278,40 @@
   }
 
   .grocery-item-actions,
+  .grocery-hero__actions,
   .grocery-button {
     width: 100%;
   }
 
-  .grocery-item-actions button {
+  .grocery-item-actions button,
+  .grocery-hero__actions button {
     flex: 1;
+  }
+}
+
+@media print {
+  .grocery-form,
+  .grocery-hero__actions,
+  .grocery-list-toolbar label,
+  .grocery-item-actions,
+  nav {
+    display: none !important;
+  }
+
+  .grocery-page {
+    background: #ffffff;
+    padding: 0;
+  }
+
+  .grocery-layout,
+  .grocery-category-grid {
+    display: block;
+  }
+
+  .grocery-list-panel,
+  .grocery-category {
+    border: 0;
+    box-shadow: none;
+    break-inside: avoid;
   }
 }

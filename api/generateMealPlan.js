@@ -164,49 +164,96 @@ class PublicHttpError extends Error {
 class RateLimitError extends Error {}
 
 module.exports = async function generateMealPlanHandler(req, res) {
+  const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  const timing = createTimingLogger({ model });
+  let uid = "unknown";
+
   try {
+    timing.log("request_received", timing.startedAt, { success: true });
+
+    const corsStartedAt = Date.now();
     if (!originIsAllowed(req)) {
+      timing.log("cors_auth_check", corsStartedAt, { uid, success: false });
+      timing.log("total_endpoint_duration", timing.startedAt, { uid, success: false, statusCode: 403 });
       return sendJson(res, 403, { message: "Origin is not allowed." });
     }
 
     applyCorsHeaders(req, res);
 
     if (req.method === "OPTIONS") {
+      timing.log("cors_auth_check", corsStartedAt, { uid, success: true, method: "OPTIONS" });
+      timing.log("total_endpoint_duration", timing.startedAt, { uid, success: true, statusCode: 204 });
       res.statusCode = 204;
       return res.end();
     }
 
     if (req.method !== "POST") {
+      timing.log("cors_auth_check", corsStartedAt, { uid, success: false, method: req.method });
+      timing.log("total_endpoint_duration", timing.startedAt, { uid, success: false, statusCode: 405 });
       res.setHeader("Allow", "POST, OPTIONS");
       return sendJson(res, 405, { message: "Method not allowed." });
     }
+    timing.log("cors_auth_check", corsStartedAt, { uid, success: true, method: req.method });
 
+    const bodyStartedAt = Date.now();
     const body = await readRequestBody(req);
     const payload = validateRequestBody(body);
+    timing.log("request_body_validation", bodyStartedAt, { uid, success: true });
+
+    const tokenStartedAt = Date.now();
     const decodedToken = await verifyFirebaseIdToken(req);
-    const profile = await buildValidatedProfile(decodedToken.uid, payload.profile);
+    uid = decodedToken.uid;
+    timing.log("firebase_id_token_verification", tokenStartedAt, { uid, success: true });
+
+    const profileStartedAt = Date.now();
+    const savedProfile = await loadSavedProfile(uid);
+    timing.log("firestore_profile_load", profileStartedAt, { uid, success: true });
+
+    const profileValidationStartedAt = Date.now();
+    const profile = validateProfileForGeneration(uid, {
+      ...savedProfile,
+      ...payload.profile
+    });
+    timing.log("profile_validation", profileValidationStartedAt, { uid, success: true });
 
     if (!process.env.OPENROUTER_API_KEY) {
       throw new PublicHttpError(500, "Meal generation backend is not configured.");
     }
 
-    await enforceDailyLimit(decodedToken.uid);
+    const rateLimitStartedAt = Date.now();
+    await enforceDailyLimit(uid);
+    timing.log("rate_limit_check", rateLimitStartedAt, { uid, success: true });
 
+    const promptStartedAt = Date.now();
     const prompt = buildMealPlanPrompt(profile);
+    timing.log("prompt_construction", promptStartedAt, { uid, success: true, promptLength: prompt.length });
+
+    const openRouterStartedAt = Date.now();
     const rawAiResponse = await callOpenRouter({
       apiKey: process.env.OPENROUTER_API_KEY,
-      model: process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
+      model,
       prompt
     });
+    timing.log("openrouter_request", openRouterStartedAt, { uid, success: true });
 
-    const validatedPlan = parseAndValidateMealPlan(rawAiResponse, decodedToken.uid);
+    const parseStartedAt = Date.now();
+    const parsedPlan = parseMealPlanJson(rawAiResponse, uid);
+    timing.log("json_parse_extract", parseStartedAt, { uid, success: true });
+
+    const validationStartedAt = Date.now();
+    const validatedPlan = validateMealPlanCandidate(parsedPlan, uid);
+    timing.log("zod_validation", validationStartedAt, { uid, success: true });
+
+    const normalizationStartedAt = Date.now();
     const mealPlan = normalizeMealPlanForFirestore(validatedPlan);
     const nutrition = calculateWeeklyAverage(mealPlan);
     const dailyNutrition = DAYS.reduce((acc, day) => {
       acc[day] = mealPlan[day].totalNutrition;
       return acc;
     }, {});
+    timing.log("normalization", normalizationStartedAt, { uid, success: true });
 
+    timing.log("total_endpoint_duration", timing.startedAt, { uid, success: true, statusCode: 200 });
     return sendJson(res, 200, {
       mealPlan,
       nutrition,
@@ -214,6 +261,11 @@ module.exports = async function generateMealPlanHandler(req, res) {
     });
   } catch (error) {
     if (error instanceof PublicHttpError) {
+      timing.log("total_endpoint_duration", timing.startedAt, {
+        uid,
+        success: false,
+        statusCode: error.statusCode
+      });
       return sendJson(res, error.statusCode, { message: error.message });
     }
 
@@ -222,11 +274,34 @@ module.exports = async function generateMealPlanHandler(req, res) {
       stack: error.stack
     });
 
+    timing.log("total_endpoint_duration", timing.startedAt, { uid, success: false, statusCode: 500 });
     return sendJson(res, 500, {
       message: "Could not generate your meal plan. Please try again."
     });
   }
 };
+
+function createTimingLogger({ model }) {
+  const startedAt = Date.now();
+
+  return {
+    startedAt,
+    log(stage, stageStartedAt, details = {}) {
+      const now = Date.now();
+      console.log("optimeal.generateMealPlan.timing", {
+        uid: details.uid || "unknown",
+        model,
+        stage,
+        durationMs: now - stageStartedAt,
+        totalMs: now - startedAt,
+        success: details.success !== false,
+        ...(details.statusCode ? { statusCode: details.statusCode } : {}),
+        ...(details.method ? { method: details.method } : {}),
+        ...(details.promptLength ? { promptLength: details.promptLength } : {})
+      });
+    }
+  };
+}
 
 function originIsAllowed(req) {
   const origin = req.headers.origin;
@@ -328,24 +403,21 @@ async function verifyFirebaseIdToken(req) {
   }
 }
 
-async function buildValidatedProfile(uid, clientProfile) {
-  let savedProfile = {};
-
+async function loadSavedProfile(uid) {
   try {
     const userSnap = await getFirestore().collection("users").doc(uid).get();
-    savedProfile = userSnap.exists ? userSnap.data() : {};
+    return userSnap.exists ? userSnap.data() : {};
   } catch (error) {
     console.error("Could not load saved profile for generation", {
       uid,
       message: error.message
     });
+    return {};
   }
+}
 
-  const result = profileSchema.safeParse({
-    ...savedProfile,
-    ...clientProfile
-  });
-
+function validateProfileForGeneration(uid, rawProfile) {
+  const result = profileSchema.safeParse(rawProfile);
   if (!result.success) {
     console.error("Meal generation profile validation failed", {
       uid,
@@ -493,13 +565,24 @@ async function callOpenRouter({ apiKey, model, prompt }) {
   }
 }
 
-function parseAndValidateMealPlan(rawResponse, uid) {
+function parseMealPlanJson(rawResponse, uid) {
   try {
     const extracted = typeof rawResponse === "string" ? extractJson(rawResponse) : rawResponse;
     const parsed = typeof extracted === "string" ? JSON.parse(extracted) : extracted;
-    const candidate = parsed && parsed.mealPlan && Array.isArray(parsed.mealPlan.days)
+    return parsed && parsed.mealPlan && Array.isArray(parsed.mealPlan.days)
       ? parsed.mealPlan
       : parsed;
+  } catch (error) {
+    console.error("Generated meal plan JSON parsing failed", {
+      uid,
+      message: error.message
+    });
+    throw new PublicHttpError(502, "Generated meal plan was invalid. Please try again.");
+  }
+}
+
+function validateMealPlanCandidate(candidate, uid) {
+  try {
     return mealPlanSchema.parse(candidate);
   } catch (error) {
     console.error("Generated meal plan validation failed", {

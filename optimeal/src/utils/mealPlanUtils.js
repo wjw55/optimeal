@@ -179,11 +179,12 @@ export function normalizeGroceryItem(rawItem, context = {}) {
       name,
       quantity: parseQuantity(quantityText),
       unit: parseUnit(quantityText),
-      category: inferCategory(name),
-      checked,
-      sourceDay: day,
-      sourceMeal: meal,
-      addedBy: 'user'
+    category: inferCategory(name),
+    checked,
+    alreadyHave: false,
+    sourceDay: day,
+    sourceMeal: meal,
+    addedBy: 'user'
     };
   }
 
@@ -195,6 +196,7 @@ export function normalizeGroceryItem(rawItem, context = {}) {
     unit: rawItem?.unit || '',
     category: GROCERY_CATEGORIES.includes(rawItem?.category) ? rawItem.category : inferCategory(name),
     checked: Boolean(rawItem?.checked),
+    alreadyHave: Boolean(rawItem?.alreadyHave),
     sourceDay: rawItem?.sourceDay || day,
     sourceMeal: rawItem?.sourceMeal || meal,
     addedBy: rawItem?.addedBy || 'ai'
@@ -214,6 +216,7 @@ export function buildGroceryItem({ name, quantity, unit, category, sourceDay, so
     unit: unit || '',
     category: GROCERY_CATEGORIES.includes(category) ? category : inferCategory(name),
     checked: false,
+    alreadyHave: false,
     sourceDay,
     sourceMeal,
     addedBy
@@ -237,6 +240,72 @@ export function groupGroceriesByCategory(plan, selectedDay = 'all') {
   });
 
   return grouped;
+}
+
+export function aggregateGroceriesByCategory(plan, selectedDay = 'all') {
+  const grouped = groupGroceriesByCategory(plan, selectedDay);
+  return GROCERY_CATEGORIES.reduce((acc, category) => {
+    acc[category] = aggregateGroceryItems(grouped[category] || []);
+    return acc;
+  }, {});
+}
+
+export function aggregateGroceryItems(items = []) {
+  const aggregated = [];
+  const lookup = new Map();
+
+  items.forEach((item) => {
+    const normalizedName = String(item.name || '').trim().toLowerCase();
+    const unit = String(item.unit || '').trim();
+    const quantity = Number(item.quantity);
+    const canAggregate = normalizedName && unit && Number.isFinite(quantity);
+    const key = [
+      normalizedName,
+      unit.toLowerCase(),
+      item.category || 'Other',
+      Boolean(item.checked),
+      Boolean(item.alreadyHave)
+    ].join('|');
+
+    if (!canAggregate || !lookup.has(key)) {
+      const nextItem = {
+        ...item,
+        quantity: canAggregate ? quantity : item.quantity,
+        sourceIds: [item.id],
+        sourceDays: uniqueValues([item.sourceDay]),
+        sourceMeals: uniqueValues([item.sourceMeal])
+      };
+      aggregated.push(nextItem);
+      if (canAggregate) lookup.set(key, nextItem);
+      return;
+    }
+
+    const existing = lookup.get(key);
+    existing.quantity = roundQuantity(Number(existing.quantity) + quantity);
+    existing.sourceIds.push(item.id);
+    existing.sourceDays = uniqueValues([...existing.sourceDays, item.sourceDay]);
+    existing.sourceMeals = uniqueValues([...existing.sourceMeals, item.sourceMeal]);
+  });
+
+  return aggregated;
+}
+
+export function formatGroceryGroupsAsText(groups) {
+  return GROCERY_CATEGORIES
+    .map((category) => {
+      const items = groups[category] || [];
+      if (!items.length) return '';
+
+      const lines = items.map((item) => {
+        const quantity = [item.quantity, item.unit].filter(Boolean).join(' ').trim();
+        const status = item.alreadyHave ? ' (already have)' : item.checked ? ' (purchased)' : '';
+        return `- ${item.name}${quantity ? ` - ${quantity}` : ''}${status}`;
+      });
+
+      return [category, ...lines].join('\n');
+    })
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export function countGroceries(plan) {
@@ -381,6 +450,7 @@ function normalizeCheckedGroceryString(rawItem, { day, meal, index }) {
     unit: parseUnit(quantityText),
     category: inferCategory(name),
     checked: true,
+    alreadyHave: false,
     sourceDay: day,
     sourceMeal: meal,
     addedBy: 'user'
@@ -399,6 +469,14 @@ function toNumber(value) {
 
 function buildItemId(name, day, meal, index) {
   return `${day}-${meal}-${index}-${String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function roundQuantity(value) {
+  return Math.round(value * 100) / 100;
 }
 
 function structuredCloneSafe(value) {

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "functions": {
+    "api/generateMealPlan.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "buildCommand": ""
+}git add vercel.json
+git commit -m "Configure Vercel API-only deployment"
+git push

@@ -1,102 +1,157 @@
 .explore-container {
-  padding: 1rem;
+  display: grid;
+  gap: 18px;
 }
 
-.explore-container h3 {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  position: relative;
+.recipe-section-heading p {
+  color: #23705d;
+  font-size: 0.78rem;
+  font-weight: 860;
+  letter-spacing: 0.08em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
 }
 
-.explore-container h3:after {
-  content: "";
-  display: block;
-  width: 50px;
-  height: 3px;
-  background-color: #3498db;
-  margin: 10px auto 0;
-  border-radius: 2px;
+.recipe-section-heading h2 {
+  margin: 0;
+}
+
+.recipe-filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.45fr) minmax(180px, 0.45fr);
+}
+
+.recipe-filters label {
+  color: #40514c;
+  display: grid;
+  gap: 7px;
+  font-weight: 760;
+}
+
+.recipe-filters input,
+.recipe-filters select {
+  border: 1px solid #ccd8d2;
+  border-radius: 8px;
+  color: #13231f;
+  font: inherit;
+  min-height: 40px;
+  padding: 9px 10px;
 }
 
 .recipe-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 4rem;
-  margin-top: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
 }
 
 .recipe-card {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  padding: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e1e8e4;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
-  height: 100%;
+  overflow: hidden;
 }
 
-.recipe-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: #e0e0e0;
+.recipe-card__image {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  width: 100%;
 }
 
-.recipe-content {
-  flex: 1;
+.recipe-card__content {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
 }
 
-.recipe-content h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.3rem;
-  color: #2c3e50;
-  line-height: 1.3;
+.recipe-card h3 {
+  margin: 0;
 }
 
-.recipe-content p {
-  font-size: 0.95rem;
-  color: #7f8c8d;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+.recipe-card p {
+  color: #5d6d67;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.recipe-meta,
+.recipe-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recipe-meta span,
+.recipe-tags span {
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 780;
+  padding: 6px 9px;
+}
+
+.recipe-meta span {
+  background: #f2f6f4;
+  color: #40514c;
+}
+
+.recipe-tags span {
+  background: #e8f3ed;
+  color: #145d49;
 }
 
 .recipe-footer {
-  margin-top: auto;
+  align-items: center;
+  border-top: 1px solid #edf1ee;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
+  gap: 12px;
+  margin-top: auto;
+  padding: 14px 16px;
 }
 
 .recipe-footer span {
-  font-size: 0.85rem;
-  color: #95a5a6;
-  font-style: italic;
+  color: #64736e;
+  font-size: 0.9rem;
 }
 
 .recipe-footer button {
-  background-color: #3498db;
-  color: white;
+  background: #0f7a5b;
   border: none;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  border-radius: 30px;
+  border-radius: 8px;
+  color: #ffffff;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
+  font: inherit;
+  font-weight: 780;
+  min-height: 38px;
+  padding: 0 14px;
 }
 
-.recipe-footer button:hover {
-  background-color: #2980b9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+.recipe-empty,
+.recipe-error {
+  border-radius: 8px;
+  padding: 18px;
 }
 
-.recipe-footer button:active {
-  transform: translateY(0);
+.recipe-empty {
+  background: #f6f8f7;
+  border: 1px solid #e1e8e4;
+  color: #5d6d67;
+}
+
+.recipe-empty h3 {
+  margin: 0 0 6px;
+}
+
+.recipe-error {
+  background: #fff3f1;
+  border: 1px solid #f1cbc5;
+  color: #9f2d2d;
+}
+
+@media (max-width: 760px) {
+  .recipe-filters {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,0 +1,65 @@
+.app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px clamp(18px, 4vw, 48px);
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e6e9ef;
+  backdrop-filter: blur(14px);
+}
+
+.app-nav__brand {
+  color: #12312b;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.app-nav__links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.app-nav__links a,
+.app-nav__logout {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #40514c;
+  background: transparent;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app-nav__links a.active,
+.app-nav__links a:hover,
+.app-nav__logout:hover {
+  color: #12312b;
+  background: #eef7f2;
+}
+
+.app-nav__logout {
+  color: #9f2d2d;
+}
+
+@media (max-width: 720px) {
+  .app-nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-nav__links {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

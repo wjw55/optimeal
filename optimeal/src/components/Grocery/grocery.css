@@ -1,441 +1,271 @@
-/* General Body Styling */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
-/* Overall page layout */
 .grocery-page {
-  max-width: 800px;  /* Reduced from 1200px */
-  margin: 0 auto;
-  padding: 0 20px;
+  background: #f6f8f7;
+  color: #13231f;
+  min-height: calc(100vh - 72px);
+  padding: clamp(20px, 4vw, 44px);
 }
 
-/* Title */
-h1.title {
-  text-align: center;
-  margin: 30px 0 20px;
-  font-size: 2.5rem;
-  color: #2c3e50;
+.grocery-hero,
+.grocery-layout,
+.grocery-alert,
+.grocery-state {
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Day Dropdown */
-.day-select-container {
+.grocery-hero {
+  align-items: flex-end;
   display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
 }
 
-.day-select,
-.meal-select {
-  display: block;
-  margin: 0 auto 20px;
-  padding: 12px 20px;
-  border-radius: 30px;
-  border: 2px solid #2c3e50;
-  background-color: #ffffff;
-  font-size: 1.1rem;
-  color: #2c3e50;
-  cursor: pointer;
-  min-width: 200px;
-  max-width: 300px;
-  text-align: center;
+.grocery-kicker {
+  color: #23705d;
+  font-size: 0.78rem;
+  font-weight: 860;
+  letter-spacing: 0.08em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
 }
 
-/* Day boxes layout */
-.days-container {
+.grocery-hero h1 {
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  margin: 0 0 10px;
+}
+
+.grocery-hero p:not(.grocery-kicker) {
+  color: #5d6d67;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.grocery-layout {
+  align-items: start;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 25px;
-  margin: 0 auto;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 18px;
 }
 
-/* Container for all day boxes */
-/* Day box */
-.box {
-  max-width: 600px;  /* Add max-width to make boxes narrower */
-  margin: 0 auto 20px;  /* Center the box and add bottom margin */
-  padding: 20px;
-  border: none;
-  border-radius: 12px;
-  background-color: white;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.grocery-form,
+.grocery-list-panel,
+.grocery-category,
+.grocery-empty,
+.grocery-state,
+.grocery-alert {
+  background: #ffffff;
+  border: 1px solid #e1e8e4;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(20, 35, 31, 0.05);
 }
 
-.box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+.grocery-form,
+.grocery-list-panel,
+.grocery-state,
+.grocery-alert {
+  padding: clamp(18px, 3vw, 24px);
 }
 
-.box h2 {
-  color: #34495e;
-  margin-bottom: 15px;
-  font-size: 1.6rem;
+.grocery-form {
+  display: grid;
+  gap: 14px;
+  position: sticky;
+  top: 92px;
 }
 
-/* Meal buttons */
-.meal-box {
+.grocery-form h2,
+.grocery-list-toolbar h2 {
+  margin: 0;
+}
+
+.grocery-form label,
+.grocery-list-toolbar label {
+  color: #40514c;
+  display: grid;
+  gap: 7px;
+  font-weight: 760;
+}
+
+.grocery-form input,
+.grocery-form select,
+.grocery-list-toolbar select,
+.grocery-edit-row input,
+.grocery-edit-row select {
+  border: 1px solid #ccd8d2;
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: #13231f;
+  font: inherit;
+  min-height: 40px;
+  padding: 9px 10px;
   width: 100%;
-  background-color: #f7f7f7;
-  border: 1px solid #eee;
+}
+
+.grocery-form__grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grocery-button,
+.grocery-item-actions button,
+.grocery-edit-row button {
+  border: 1px solid #cfd9d4;
   border-radius: 8px;
-  padding: 14px;
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease;
+  font: inherit;
+  font-weight: 780;
+  min-height: 40px;
+  padding: 0 14px;
 }
 
-.meal-box h4 {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin: 0;
+.grocery-button--primary {
+  background: #0f7a5b;
+  border-color: #0f7a5b;
+  color: #ffffff;
 }
 
-.meal-box:hover {
-  background-color: #eaeaea;
-  transform: scale(1.02);
+.grocery-button--secondary,
+.grocery-item-actions button,
+.grocery-edit-row button {
+  background: #ffffff;
+  color: #17352e;
 }
 
-/* Expanded meal content */
-.meal-content {
-  max-height: 0;
-  overflow: hidden;
-  background-color: #fcfcfc;
-  border-radius: 0 0 10px 10px;
-  transition: max-height 0.4s ease, padding 0.3s ease;
-  padding: 0 10px;
+.grocery-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.meal-content.expanded {
-  max-height: 800px;
-  padding: 15px;
+.grocery-alert {
+  background: #eef7f2;
+  color: #155744;
+  margin-bottom: 18px;
 }
 
-.meal-content h5 {
-  margin: 8px 0;
-  font-weight: normal;
-  color: #555;
-  font-size: 0.95rem;
+.grocery-alert--error {
+  background: #fff3f1;
+  border-color: #f1cbc5;
+  color: #9f2d2d;
 }
 
-/* Grocery container for both boxes */
-.grocery-container {
+.grocery-list-toolbar {
+  align-items: flex-end;
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 15px;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
-/* AI Meal Box */
-.ai-meal-box {
-  background-color: #e8f4fd;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 5px;
-  border-left: 4px solid #3498db;
+.grocery-category-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.ai-meal-box h5 {
-  margin: 0 0 8px 0;
-  color: #2980b9;
-  font-size: 0.95rem;
+.grocery-category {
+  box-shadow: none;
+  padding: 16px;
 }
 
-.ai-meal-box p {
+.grocery-category h3,
+.grocery-empty h3 {
+  margin: 0 0 12px;
+}
+
+.grocery-category ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
   margin: 0;
-  color: #333;
+  padding: 0;
 }
 
-/* AI Ingredients box */
-.ai-ingredients-box {
-  background-color: #eaf7fd;
-  border-radius: 8px;
-  padding: 12px;
-  border-left: 4px solid #3498db;
-}
-
-.ai-ingredients-box h5 {
-  margin: 0 0 8px 0;
-  color: #2980b9;
-  font-size: 0.95rem;
-}
-
-/* User ingredients box */
-.user-ingredients-box {
-  background-color: #f0f9f0;
-  border-radius: 8px;
-  padding: 12px;
-  border-left: 4px solid #2ecc71;
-}
-
-.user-ingredients-box h5 {
-  margin: 0 0 8px 0;
-  color: #27ae60;
-  font-size: 0.95rem;
-}
-
-/* Empty state message */
-.empty-message {
-  color: #999;
-  font-style: italic;
-  text-align: center;
-  padding: 10px;
-  margin: 0;
-}
-
-/* Increase max height for expanded content */
-.meal-content.expanded {
-  max-height: 800px;
-}
-
-/* AI Ingredients section */
-.ai-ingredients {
-  margin-top: 12px;
-  border-top: 1px dashed #bbd8e8;
+.grocery-category li {
+  align-items: center;
+  border-top: 1px solid #edf1ee;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   padding-top: 10px;
 }
 
-.ai-ingredients h6 {
-  margin: 0 0 8px 0;
-  color: #3498db;
-  font-size: 0.85rem;
+.grocery-category li.is-checked .grocery-item-main strong {
+  color: #879691;
+  text-decoration: line-through;
 }
 
-/* Grocery Box */
-.grocery-box {
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 12px;
-  border-left: 4px solid #2ecc71;
-}
-
-.grocery-box h5 {
-  margin: 0 0 8px 0;
-  color: #27ae60;
-  font-size: 0.95rem;
-}
-
-/* Inline grocery add form */
-.add-grocery-inline {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.inline-input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.inline-input.small {
-  flex: 0.3;
-  min-width: 60px;
-}
-
-.add-inline-btn {
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  width: 32px;
-  height: 32px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
+.grocery-item-main {
   align-items: center;
-  justify-content: center;
-}
-
-.add-inline-btn:hover {
-  background-color: #27ae60;
-}
-
-/* Empty state message */
-.grocery-box .empty-message {
-  color: #999;
-  font-style: italic;
-  text-align: center;
-  padding: 10px;
-}
-
-/* Grocery list inside meal content */
-.meal-content ul {
-  list-style: none;
-  padding-left: 0;
-  margin-top: 8px;
-}
-
-.meal-content li {
-  padding: 5px 0;
-  color: #444;
-  font-size: 0.95rem;
-  border-bottom: 1px solid #eee;
-}
-
-/* Navbar (if used) */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 30px;
-  background-color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.navbar .branding h1 {
-  font-size: 1.8rem;
-  color: #34495e;
-}
-
-.navbar nav a {
-  margin: 0 15px;
-  color: #34495e;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.navbar nav a:hover {
-  color: #1abc9c;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .days-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .grocery-form {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Grocery form styling - reorganized layout */
-.grocery-form {
-  max-width: 450px;
-  margin: 0 auto 30px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-/* Row container for form elements */
-.form-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 12px;
-  width: 100%;
 }
 
-/* Item name input - takes more space */
-.item-input {
-  flex: 2;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
+.grocery-item-main span {
+  display: grid;
+  gap: 2px;
 }
 
-/* Count input - takes less space */
-.count-input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  min-width: 80px;
+.grocery-item-main small {
+  color: #64736e;
 }
 
-/* Select inputs - equal width */
-.day-meal-select {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
+.grocery-quantity {
+  color: #40514c;
+  font-weight: 760;
+  white-space: nowrap;
 }
 
-/* Button container for centering */
-.button-container {
+.grocery-item-actions {
   display: flex;
-  justify-content: center;
-  margin-top: 15px;
+  gap: 8px;
 }
 
-/* Add button styling */
-.add-btn {
-  padding: 0.75rem 2rem;
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  display: block;
-  margin: 1rem auto 0;
-  min-width: 150px;
+.grocery-edit-row {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(70px, 0.7fr) minmax(70px, 0.7fr) minmax(120px, 1fr) auto auto;
 }
 
-.add-btn:hover {
-  background-color: #219653;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(39, 174, 96, 0.2);
+.grocery-empty {
+  box-shadow: none;
+  color: #5d6d67;
+  padding: 24px;
 }
 
-/* Grocery items styling */
-.grocery-items {
-  list-style: none;
-  padding: 0;
-  margin: 10px 0;
+@media (max-width: 980px) {
+  .grocery-layout,
+  .grocery-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grocery-form {
+    position: static;
+  }
 }
 
-.grocery-items li {
-  display: flex;
-  align-items: center;
-  padding: 8px 10px;
-  margin: 5px 0;
-  background-color: white;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  justify-content: space-between;
-  cursor: pointer;
-}
+@media (max-width: 640px) {
+  .grocery-hero,
+  .grocery-list-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-.grocery-items li:hover {
-  background-color: #f2f2f2;
-}
+  .grocery-form__grid,
+  .grocery-category li,
+  .grocery-edit-row {
+    grid-template-columns: 1fr;
+  }
 
-.grocery-items li.checked span {
-  text-decoration: line-through;
-  color: #888;
-}
+  .grocery-item-actions,
+  .grocery-button {
+    width: 100%;
+  }
 
-.grocery-items li span {
-  flex: 1;
-  text-align: left;
-}
-
-.delete-item {
-  background: none;
-  border: none;
-  color: #ff5252;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0 5px;
-  margin-left: auto;
-}
-
-.delete-item:hover {
-  color: #ff0000;
+  .grocery-item-actions button {
+    flex: 1;
+  }
 }

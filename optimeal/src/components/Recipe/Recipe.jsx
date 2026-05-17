@@ -1,46 +1,28 @@
 import React from 'react';
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
-import { auth } from '../auth/firebase'; // make sure path is correct
+import { NavLink, Outlet } from 'react-router-dom';
+import AppNav from '../shared/AppNav';
 import './Recipe.css';
 
 function Recipe() {
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await auth.signOut();
-    navigate('/');
-  };
-
   return (
-    <div className="App">
-      {/* Navbar (copied from Dashboard.jsx) */}
-      <div className="navbar">
-        <div className="branding">
-          <h1>OPTIMEAL</h1>
-        </div>
-        <nav>
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/recipes">Recipes</Link>
-          <Link to="/grocery">Grocery List</Link>
-          <Link to="/social">Forum</Link>
-          {/*<a href="#">Settings</a>*/ }
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
-        </nav>
-      </div>
+    <div>
+      <AppNav />
+      <main className="recipe-page">
+        <section className="recipe-page__header">
+          <p>Recipe workspace</p>
+          <h1>Recipes</h1>
+        </section>
 
-      {/* Tab navigation */}
-      <div className="recipe-page">
-        <h2>Recipes</h2>
-        <div className="recipe-tabs">
-          <NavLink to="new" className={({ isActive }) => isActive ? 'active' : ''}>New</NavLink>
+        <nav className="recipe-tabs" aria-label="Recipe sections">
+          <NavLink to="new" className={({ isActive }) => isActive ? 'active' : ''}>Share Recipe</NavLink>
           <NavLink to="explore" className={({ isActive }) => isActive ? 'active' : ''}>Explore</NavLink>
-          <NavLink to="saved" className={({ isActive }) => isActive ? 'active' : ''}>Saved</NavLink>
-        </div>
+          <NavLink to="saved" className={({ isActive }) => isActive ? 'active' : ''}>Saved Recipes</NavLink>
+        </nav>
 
-        <div className="recipe-content">
+        <section className="recipe-content">
           <Outlet />
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

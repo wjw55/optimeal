@@ -1,78 +1,217 @@
 import React, { useState } from 'react';
-import { db, auth } from '../auth/firebase'; // adjust path if needed
-import { doc, setDoc } from 'firebase/firestore';
+import { deleteField, doc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../auth/firebase';
+import {
+  ALLERGY_OPTIONS,
+  APPLIANCE_OPTIONS,
+  CUISINE_OPTIONS,
+  DIET_TYPES,
+  buildProfileForSave,
+  normalizeProfile,
+  toggleValue
+} from '../../utils/profileUtils';
 import './CompleteProfile.css';
 
-
 function CompleteProfile() {
-  const [username, setUsername] = useState('');
-  const [age, setAge] = useState('');
-  const [sex, setSex] = useState('Male');
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
-  const [goal, setGoal] = useState('Maintain weight');
-  const [activityLevel, setActivityLevel] = useState('Moderate');
+  const [profile, setProfile] = useState(() => normalizeProfile({}));
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const updateProfileField = (field, value) => {
+    setProfile((current) => ({ ...current, [field]: value }));
+  };
+
+  const toggleProfileArrayValue = (field, value) => {
+    setProfile((current) => ({
+      ...current,
+      [field]: toggleValue(current[field] || [], value)
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+
     const user = auth.currentUser;
     if (!user) return;
 
+    const profileForSave = buildProfileForSave(profile);
+    if (!profileForSave.username || !profileForSave.age || !profileForSave.heightCm || !profileForSave.weightKg) {
+      setError('Please complete your username, age, height, and weight.');
+      return;
+    }
+
     await setDoc(doc(db, 'users', user.uid), {
-      username,
-      age,
-      sex,
-      height,
-      weight,
-      goal,
-      activityLevel,
-      updatedAt: new Date()
+      ...profileForSave,
+      height: deleteField(),
+      weight: deleteField()
     }, { merge: true });
 
     navigate('/dashboard');
   };
 
   return (
-    <div className="complete-profile">
-      <h2>Complete Your Profile</h2>
-      <form onSubmit={handleSubmit}>
-        <label>Username</label>
-        <input value={username} onChange={e => setUsername(e.target.value)} required />
+    <main className="complete-profile">
+      <section className="complete-profile__card">
+        <p className="complete-profile__kicker">A better meal plan starts here</p>
+        <h1>Complete your profile</h1>
+        <p className="complete-profile__intro">
+          These preferences help Optimeal shape meals, nutrition targets, and grocery lists around your week.
+        </p>
 
-        <label>Age</label>
-        <input type="number" value={age} onChange={e => setAge(e.target.value)} required />
+        {error && <div className="complete-profile__error">{error}</div>}
 
-        <label>Sex</label>
-        <select value={sex} onChange={e => setSex(e.target.value)}>
-          <option>Male</option>
-          <option>Female</option>
-        </select>
+        <form onSubmit={handleSubmit}>
+          <label>
+            Username
+            <input value={profile.username} onChange={(event) => updateProfileField('username', event.target.value)} required />
+          </label>
 
-        <label>Height</label>
-        <input value={height} onChange={e => setHeight(e.target.value)} required />
+          <div className="complete-profile__grid">
+            <label>
+              Age
+              <input type="number" min="13" value={profile.age} onChange={(event) => updateProfileField('age', event.target.value)} required />
+            </label>
+            <label>
+              Sex
+              <select value={profile.sex} onChange={(event) => updateProfileField('sex', event.target.value)}>
+                <option>Prefer not to say</option>
+                <option>Female</option>
+                <option>Male</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label>
+              Height (cm)
+              <input type="number" min="80" value={profile.heightCm} onChange={(event) => updateProfileField('heightCm', event.target.value)} required />
+            </label>
+            <label>
+              Weight (kg)
+              <input type="number" min="20" value={profile.weightKg} onChange={(event) => updateProfileField('weightKg', event.target.value)} required />
+            </label>
+          </div>
 
-        <label>Weight</label>
-        <input value={weight} onChange={e => setWeight(e.target.value)} required />
+          <div className="complete-profile__grid">
+            <label>
+              Activity level
+              <select value={profile.activityLevel} onChange={(event) => updateProfileField('activityLevel', event.target.value)}>
+                <option>Light</option>
+                <option>Moderate</option>
+                <option>Intense</option>
+              </select>
+            </label>
+            <label>
+              Goal
+              <select value={profile.goal} onChange={(event) => updateProfileField('goal', event.target.value)}>
+                <option>Maintain weight</option>
+                <option>Lose weight</option>
+                <option>Gain weight</option>
+              </select>
+            </label>
+            <label>
+              Diet type
+              <select value={profile.dietType} onChange={(event) => updateProfileField('dietType', event.target.value)}>
+                {DIET_TYPES.map((option) => <option key={option}>{option}</option>)}
+              </select>
+            </label>
+            <label>
+              Budget
+              <select value={profile.budgetLevel} onChange={(event) => updateProfileField('budgetLevel', event.target.value)}>
+                <option>Budget</option>
+                <option>Moderate</option>
+                <option>Flexible</option>
+              </select>
+            </label>
+          </div>
 
-        <label>Activity Level</label>
-        <select value={activityLevel} onChange={e => setActivityLevel(e.target.value)}>
-          <option>Light</option>
-          <option>Moderate</option>
-          <option>Intense</option>
-        </select>
+          <CheckboxGroup
+            label="Allergies"
+            options={ALLERGY_OPTIONS}
+            values={profile.allergies}
+            onToggle={(value) => toggleProfileArrayValue('allergies', value)}
+          />
 
-        <label>Goal</label>
-        <select value={goal} onChange={e => setGoal(e.target.value)}>
-          <option>Maintain weight</option>
-          <option>Lose weight</option>
-          <option>Gain weight</option>
-        </select>
+          <label>
+            Custom allergies
+            <input value={profile.customAllergies} onChange={(event) => updateProfileField('customAllergies', event.target.value)} placeholder="Optional" />
+          </label>
 
-        <button type="submit">Save and Continue</button>
-      </form>
-    </div>
+          <label>
+            Foods to avoid
+            <input value={profile.foodsToAvoid} onChange={(event) => updateProfileField('foodsToAvoid', event.target.value)} placeholder="e.g. mushrooms, spicy food" />
+          </label>
+
+          <CheckboxGroup
+            label="Preferred cuisines"
+            options={CUISINE_OPTIONS}
+            values={profile.preferredCuisines}
+            onToggle={(value) => toggleProfileArrayValue('preferredCuisines', value)}
+          />
+
+          <div className="complete-profile__grid">
+            <label>
+              Cooking skill
+              <select value={profile.cookingSkill} onChange={(event) => updateProfileField('cookingSkill', event.target.value)}>
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+            </label>
+            <label>
+              Available cooking time
+              <select value={profile.cookingTime} onChange={(event) => updateProfileField('cookingTime', event.target.value)}>
+                <option>15 minutes</option>
+                <option>30 minutes</option>
+                <option>45 minutes</option>
+                <option>60 minutes</option>
+              </select>
+            </label>
+            <label>
+              Meals per day
+              <input type="number" min="1" max="6" value={profile.mealsPerDay} onChange={(event) => updateProfileField('mealsPerDay', event.target.value)} />
+            </label>
+            <label>
+              Servings
+              <input type="number" min="1" max="8" value={profile.servings} onChange={(event) => updateProfileField('servings', event.target.value)} />
+            </label>
+            <label>
+              Optional target calories
+              <input type="number" min="1000" value={profile.targetCalories} onChange={(event) => updateProfileField('targetCalories', event.target.value)} />
+            </label>
+            <label>
+              Optional protein target (g)
+              <input type="number" min="0" value={profile.targetProtein} onChange={(event) => updateProfileField('targetProtein', event.target.value)} />
+            </label>
+          </div>
+
+          <CheckboxGroup
+            label="Appliances"
+            options={APPLIANCE_OPTIONS}
+            values={profile.appliances}
+            onToggle={(value) => toggleProfileArrayValue('appliances', value)}
+          />
+
+          <button type="submit">Save and Continue</button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
+function CheckboxGroup({ label, options, values, onToggle }) {
+  return (
+    <fieldset className="complete-profile__fieldset">
+      <legend>{label}</legend>
+      <div>
+        {options.map((option) => (
+          <label key={option}>
+            <input type="checkbox" checked={values.includes(option)} onChange={() => onToggle(option)} />
+            {option}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

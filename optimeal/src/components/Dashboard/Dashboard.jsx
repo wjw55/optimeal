@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { deleteField, doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../auth/firebase';
 import AppNav from '../shared/AppNav';
+import Alert from '../ui/Alert';
+import LoadingPanel from '../ui/LoadingPanel';
 import { demoGroceryItems, demoMealPlan, demoProfile, demoRecipes } from '../../data/demoData';
 import { generateMealPlan } from '../../utils/mealGeneration';
 import {
@@ -259,7 +261,7 @@ function Dashboard({ demoMode = false }) {
       <div>
         <AppNav />
         <main className="dashboard-page">
-          <p className="dashboard-state">Loading your dashboard...</p>
+          <LoadingPanel>Loading your dashboard…</LoadingPanel>
         </main>
       </div>
     );
@@ -306,11 +308,7 @@ function Dashboard({ demoMode = false }) {
           </div>
         </section>
 
-        {(generationMessage || generationError) && (
-          <div className={generationError ? 'dashboard-alert dashboard-alert--error' : 'dashboard-alert'}>
-            {generationError || generationMessage}
-          </div>
-        )}
+        {(generationMessage || generationError) && <Alert variant={generationError ? 'error' : 'success'} className="dashboard-alert">{generationError || generationMessage}</Alert>}
 
         <section className="summary-grid" aria-label="Weekly summary">
           <SummaryCard label="Meals planned" value={plannedMeals} detail="Breakfast, lunch, dinner, and snacks" />
@@ -369,6 +367,7 @@ function Dashboard({ demoMode = false }) {
                     <DayMealCard
                       day={day}
                       dayPlan={mealPlan[day]}
+                      initiallyOpen={day === DAYS[0]}
                       key={day}
                       onFocusMeal={(mealType) => setFocusedMeal({
                         day,
@@ -591,14 +590,26 @@ function DemoStoryItem({ title, copy }) {
   );
 }
 
-function DayMealCard({ day, dayPlan, onFocusMeal }) {
+function DayMealCard({ day, dayPlan, onFocusMeal, initiallyOpen }) {
+  const [expanded, setExpanded] = useState(initiallyOpen);
   return (
-    <article className="day-card">
+    <article className={`day-card ${expanded ? 'is-expanded' : 'is-collapsed'}`}>
       <div className="day-card__header">
-        <h3>{day}</h3>
-        <span>{dayPlan.totalNutrition.calories || '--'} kcal</span>
+        <div>
+          <h3>{day}</h3>
+          <span>{dayPlan.totalNutrition.calories || '--'} kcal</span>
+        </div>
+        <button
+          className="day-card__toggle"
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={`day-${day.toLowerCase()}-meals`}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? 'Collapse' : 'View meals'}
+        </button>
       </div>
-      <div className="day-card__meals">
+      <div className="day-card__meals" id={`day-${day.toLowerCase()}-meals`}>
         {MEAL_TYPES.map((type) => {
           const meal = dayPlan.meals[type];
           return (
@@ -789,7 +800,7 @@ function ProfileEditor({ profile, updateProfileField, toggleProfileArrayValue, o
         onToggle={(value) => toggleProfileArrayValue('appliances', value)}
       />
       <button className="dashboard-button dashboard-button--primary" type="button" onClick={onSave}>Save profile</button>
-      {saveMessage && <p className="form-message">{saveMessage}</p>}
+      {saveMessage && <p className="form-message" role="status" aria-live="polite">{saveMessage}</p>}
     </div>
   );
 }

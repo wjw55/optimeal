@@ -14,6 +14,9 @@ import {
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from '../auth/firebase';
 import AppNav from '../shared/AppNav';
+import Alert from '../ui/Alert';
+import LoadingPanel from '../ui/LoadingPanel';
+import Modal from '../ui/Modal';
 import './Social.css';
 
 function Social() {
@@ -27,8 +30,22 @@ function Social() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [pendingPostId, setPendingPostId] = useState('');
+  const [postPendingDelete, setPostPendingDelete] = useState(null);
 
   const currentUser = auth.currentUser;
+
+  useEffect(() => {
+    if (!image) {
+      setImagePreview('');
+      return undefined;
+    }
+    const previewUrl = URL.createObjectURL(image);
+    setImagePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [image]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
@@ -63,6 +80,7 @@ function Social() {
       return;
     }
 
+    setPosting(true);
     try {
       let uploadedUrl = '';
       try {
@@ -93,7 +111,29 @@ function Social() {
     } catch (postError) {
       console.error('Error creating post:', postError);
       setError('Post could not be shared. Please try again.');
+    } finally {
+      setPosting(false);
     }
+  };
+
+  const handleImageChange = (event) => {
+    const selectedImage = event.target.files?.[0] || null;
+    setError('');
+    if (!selectedImage) {
+      setImage(null);
+      return;
+    }
+    if (!selectedImage.type.startsWith('image/')) {
+      setError('Choose a JPG, PNG, WebP, or GIF image.');
+      event.target.value = '';
+      return;
+    }
+    if (selectedImage.size > 5 * 1024 * 1024) {
+      setError('Choose an image smaller than 5 MB.');
+      event.target.value = '';
+      return;
+    }
+    setImage(selectedImage);
   };
 
   const fetchCommentsForPost = useCallback(async (postId) => {
@@ -127,9 +167,7 @@ function Social() {
   }, [fetchAllPosts]);
 
   const handleDeletePost = async (postId) => {
-    const confirmDelete = window.confirm('Delete this community post?');
-    if (!confirmDelete) return;
-
+    setPendingPostId(postId);
     try {
       const commentsRef = collection(db, 'forumPosts', postId, 'comments');
       const commentsSnap = await getDocs(commentsRef);
@@ -143,10 +181,13 @@ function Social() {
         return next;
       });
       setNotice('Post deleted.');
+      setPostPendingDelete(null);
       setTimeout(() => setNotice(''), 2500);
     } catch (deleteError) {
       console.error('Error deleting post:', deleteError);
       setError('Post could not be deleted.');
+    } finally {
+      setPendingPostId('');
     }
   };
 
@@ -158,25 +199,35 @@ function Social() {
       ? currentLikes.filter((uid) => uid !== currentUser.uid)
       : [...currentLikes, currentUser.uid];
 
-    await updateDoc(doc(db, 'forumPosts', post.id), { likes: updatedLikes });
-    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: updatedLikes } : item));
+    setPendingPostId(post.id);
+    try {
+      await updateDoc(doc(db, 'forumPosts', post.id), { likes: updatedLikes });
+      setPosts((current) => current.map((item) => item.id === post.id ? { ...item, likes: updatedLikes } : item));
+    } catch (likeError) {
+      console.error('Error updating like:', likeError);
+      setError('Your like could not be saved. Please try again.');
+    } finally {
+      setPendingPostId('');
+    }
   };
 
   const handleComment = async (postId) => {
     const draft = commentDrafts[postId]?.trim();
     if (!draft || !currentUser) return;
 
-    const username = await getUsernameByUID(currentUser.uid);
-    await addDoc(collection(db, 'forumPosts', postId, 'comments'), {
-      userId: currentUser.uid,
-      username,
-      text: draft,
-      timestamp: serverTimestamp()
-    });
-
-    setCommentDrafts((current) => ({ ...current, [postId]: '' }));
-    const updatedComments = await fetchCommentsForPost(postId);
-    setComments((current) => ({ ...current, [postId]: updatedComments }));
+    setPendingPostId(postId);
+    try {
+      const username = await getUsernameByUID(currentUser.uid);
+      await addDoc(collection(db, 'forumPosts', postId, 'comments'), { userId: currentUser.uid, username, text: draft, timestamp: serverTimestamp() });
+      setCommentDrafts((current) => ({ ...current, [postId]: '' }));
+      const updatedComments = await fetchCommentsForPost(postId);
+      setComments((current) => ({ ...current, [postId]: updatedComments }));
+    } catch (commentError) {
+      console.error('Error creating comment:', commentError);
+      setError('Your comment could not be posted. Please try again.');
+    } finally {
+      setPendingPostId('');
+    }
   };
 
   return (
@@ -191,8 +242,8 @@ function Social() {
           </div>
         </section>
 
-        {error && <div className="community-alert community-alert--error">{error}</div>}
-        {notice && <div className="community-alert">{notice}</div>}
+        {error && <Alert variant="error" className="community-alert">{error}</Alert>}
+        {notice && <Alert className="community-alert">{notice}</Alert>}
 
         <section className="community-layout">
           <form className="community-post-form" onSubmit={handleSubmitPost}>
@@ -207,9 +258,11 @@ function Social() {
             </label>
             <label>
               Image
-              <input type="file" accept="image/*" onChange={(event) => setImage(event.target.files[0])} />
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleImageChange} />
             </label>
-            <button type="submit">Share Post</button>
+            <small className="community-file-hint">Optional · JPG, PNG, WebP, or GIF · 5 MB maximum</small>
+            {imagePreview && <img className="community-image-preview" src={imagePreview} alt="Selected upload preview" />}
+            <button type="submit" disabled={posting}>{posting ? 'Sharing…' : 'Share post'}</button>
           </form>
 
           <section className="community-feed">
@@ -225,7 +278,7 @@ function Social() {
             </div>
 
             {loading ? (
-              <p className="community-empty">Loading community posts...</p>
+              <LoadingPanel>Loading community posts…</LoadingPanel>
             ) : filteredPosts.length === 0 ? (
               <div className="community-empty">
                 <h3>No posts found.</h3>
@@ -240,13 +293,13 @@ function Social() {
                       <p>Posted by {post.username || 'Community member'}</p>
                     </div>
                     {post.userId === currentUser?.uid && (
-                      <button type="button" onClick={() => handleDeletePost(post.id)}>Delete</button>
+                      <button type="button" onClick={() => setPostPendingDelete(post)}>Delete</button>
                     )}
                   </div>
                   <p>{post.description}</p>
-                  {post.imageUrl && <img src={post.imageUrl} alt="" />}
+                  {post.imageUrl && <img src={post.imageUrl} alt={`Shared with “${post.title}”`} />}
                   <div className="community-post__actions">
-                    <button type="button" onClick={() => toggleLike(post)}>
+                    <button type="button" onClick={() => toggleLike(post)} disabled={pendingPostId === post.id} aria-pressed={(post.likes || []).includes(currentUser?.uid)}>
                       {(post.likes || []).includes(currentUser?.uid) ? 'Unlike' : 'Like'} ({(post.likes || []).length})
                     </button>
                   </div>
@@ -266,12 +319,14 @@ function Social() {
                       <p>No comments yet.</p>
                     )}
                     <div className="comment-form">
+                      <label className="sr-only" htmlFor={`comment-${post.id}`}>Add a comment to {post.title}</label>
                       <input
+                        id={`comment-${post.id}`}
                         placeholder="Add a comment"
                         value={commentDrafts[post.id] || ''}
                         onChange={(event) => setCommentDrafts((current) => ({ ...current, [post.id]: event.target.value }))}
                       />
-                      <button type="button" onClick={() => handleComment(post.id)}>Post Comment</button>
+                      <button type="button" onClick={() => handleComment(post.id)} disabled={pendingPostId === post.id || !commentDrafts[post.id]?.trim()}>{pendingPostId === post.id ? 'Posting…' : 'Post comment'}</button>
                     </div>
                   </div>
                 </article>
@@ -280,6 +335,17 @@ function Social() {
           </section>
         </section>
       </main>
+      <Modal
+        open={Boolean(postPendingDelete)}
+        title="Delete this post?"
+        confirmLabel="Delete post"
+        danger
+        pending={pendingPostId === postPendingDelete?.id}
+        onClose={() => setPostPendingDelete(null)}
+        onConfirm={() => handleDeletePost(postPendingDelete.id)}
+      >
+        <p>This removes the post and its comments. This action cannot be undone.</p>
+      </Modal>
     </div>
   );
 }

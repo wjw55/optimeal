@@ -13,11 +13,16 @@ function AppNav({ demoMode = false }) {
 
   return (
     <header className="app-nav">
-      <Link to={demoMode ? '/demo' : '/dashboard'} className="app-nav__brand" aria-label="Optimeal home">
-        Optimeal
-      </Link>
+      <div className="app-nav__top">
+        <Link to={demoMode ? '/demo' : '/dashboard'} className="app-nav__brand" aria-label="Optimeal home">
+          Optimeal
+        </Link>
+        {!demoMode && (
+          <button className="app-nav__mobile-logout" type="button" onClick={handleLogout}>Log out</button>
+        )}
+      </div>
 
-      <nav className="app-nav__links" aria-label="Primary navigation">
+      <nav className={`app-nav__links ${demoMode ? 'app-nav__links--demo' : 'app-nav__links--product'}`} aria-label="Primary navigation">
         {demoMode ? (
           <>
             <NavLink to="/demo">Demo</NavLink>
@@ -26,12 +31,12 @@ function AppNav({ demoMode = false }) {
           </>
         ) : (
           <>
-            <NavLink to="/dashboard">Dashboard</NavLink>
-            <NavLink to="/recipes">Recipes</NavLink>
-            <NavLink to="/grocery">Grocery List</NavLink>
-            <NavLink to="/social">Community</NavLink>
+            <NavLink to="/dashboard"><span aria-hidden="true">⌂</span><span>Dashboard</span></NavLink>
+            <NavLink to="/recipes"><span aria-hidden="true">◇</span><span>Recipes</span></NavLink>
+            <NavLink to="/grocery"><span aria-hidden="true">✓</span><span>Grocery</span></NavLink>
+            <NavLink to="/social"><span aria-hidden="true">○</span><span>Community</span></NavLink>
             <button className="app-nav__logout" type="button" onClick={handleLogout}>
-              Logout
+              Log out
             </button>
           </>
         )}

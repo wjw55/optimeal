@@ -221,6 +221,18 @@ Demo mode does not call the AI endpoint and continues to use local sample data.
 
 6. Sign in before generating a meal plan. Demo mode works without signing in.
 
+### Meal-generation benchmark
+
+The benchmark uses synthetic profiles, runs 10 sequential OpenRouter requests, and reports schema validity, response size, token usage, finish reasons, and p50/p90 latency. It does not use Firebase or write meal plans.
+
+Live calls are disabled unless the confirmation flag is supplied. After approving API usage and setting the server-side OpenRouter environment variables, run:
+
+```bash
+npm run benchmark:meal-plan -- --confirm-live
+```
+
+The command exits unsuccessfully unless all 10 plans are valid, none are truncated, and p90 latency is below 45 seconds. Never place `OPENROUTER_API_KEY` in `optimeal/.env` or pass it as a command-line argument.
+
 ## Firebase
 
 Firebase hosting is configured at the repository root:

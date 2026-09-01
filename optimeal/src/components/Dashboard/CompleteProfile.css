@@ -76,7 +76,7 @@
   box-sizing: border-box;
   color: #13231f;
   font: inherit;
-  min-height: 42px;
+  min-height: var(--control-height);
   padding: 9px 10px;
   width: 100%;
 }
@@ -125,7 +125,7 @@
   cursor: pointer;
   font: inherit;
   font-weight: 820;
-  min-height: 46px;
+  min-height: var(--control-height);
   padding: 0 18px;
 }
 
@@ -143,3 +143,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+.complete-profile button:disabled { cursor: not-allowed; opacity: 0.62; }

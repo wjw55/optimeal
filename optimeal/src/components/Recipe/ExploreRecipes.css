@@ -35,7 +35,7 @@
   border-radius: 8px;
   color: #13231f;
   font: inherit;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 9px 10px;
 }
 
@@ -124,7 +124,7 @@
   cursor: pointer;
   font: inherit;
   font-weight: 780;
-  min-height: 38px;
+  min-height: var(--control-height);
   padding: 0 14px;
 }
 
@@ -155,3 +155,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+.recipe-footer button:disabled { cursor: not-allowed; opacity: 0.62; }

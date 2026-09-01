@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../auth/firebase';
 import AppNav from '../shared/AppNav';
+import Alert from '../ui/Alert';
+import LoadingPanel from '../ui/LoadingPanel';
 import {
   DAYS,
   GROCERY_CATEGORIES,
@@ -36,6 +38,7 @@ function GroceryList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchMealPlan = async () => {
@@ -70,15 +73,22 @@ function GroceryList() {
     const user = auth.currentUser;
     if (!user) return;
 
+    const previousPlan = mealPlan;
     setMealPlan(nextPlan);
-    await setDoc(doc(db, 'users', user.uid), {
-      currentMeals: nextPlan,
-      updatedAt: new Date()
-    }, { merge: true });
-
-    if (message) {
-      setNotice(message);
-      setTimeout(() => setNotice(''), 2500);
+    setSaving(true);
+    setError('');
+    try {
+      await setDoc(doc(db, 'users', user.uid), { currentMeals: nextPlan, updatedAt: new Date() }, { merge: true });
+      if (message) {
+        setNotice(message);
+        setTimeout(() => setNotice(''), 2500);
+      }
+    } catch (saveError) {
+      console.error('Error saving grocery list:', saveError);
+      setMealPlan(previousPlan);
+      setError('That change could not be saved. Your previous grocery list has been restored.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -165,7 +175,7 @@ function GroceryList() {
       <div>
         <AppNav />
         <main className="grocery-page">
-          <p className="grocery-state">Loading grocery list...</p>
+          <LoadingPanel>Loading grocery list…</LoadingPanel>
         </main>
       </div>
     );
@@ -194,8 +204,8 @@ function GroceryList() {
           </div>
         </section>
 
-        {error && <div className="grocery-alert grocery-alert--error">{error}</div>}
-        {notice && <div className="grocery-alert">{notice}</div>}
+        {error && <Alert variant="error" className="grocery-alert">{error}</Alert>}
+        {notice && <Alert className="grocery-alert">{notice}</Alert>}
 
         <section className="grocery-layout">
           <form className="grocery-form" onSubmit={handleAddItem}>
@@ -234,7 +244,7 @@ function GroceryList() {
                 </select>
               </label>
             </div>
-            <button className="grocery-button grocery-button--primary" type="submit">Add item</button>
+            <button className="grocery-button grocery-button--primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add item'}</button>
           </form>
 
           <section className="grocery-list-panel">
@@ -294,11 +304,16 @@ function GroceryList() {
                                 </label>
                                 <span className="grocery-quantity">{item.quantity} {item.unit}</span>
                                 <div className="grocery-item-actions">
-                                  <button type="button" onClick={() => handleToggleAlreadyHave(item)}>
+                                  <button
+                                    type="button"
+                                    className="grocery-item-action grocery-item-action--pantry"
+                                    onClick={() => handleToggleAlreadyHave(item)}
+                                    aria-pressed={Boolean(item.alreadyHave)}
+                                  >
                                     {item.alreadyHave ? 'Need to buy' : 'Already have'}
                                   </button>
-                                  <button type="button" onClick={() => startEditing(item)}>Edit</button>
-                                  <button type="button" onClick={() => handleDeleteItem(item)}>Delete</button>
+                                  <button className="grocery-item-action" type="button" onClick={() => startEditing(item)}>Edit</button>
+                                  <button className="grocery-item-action grocery-item-action--delete" type="button" onClick={() => handleDeleteItem(item)}>Delete</button>
                                 </div>
                               </>
                             )}

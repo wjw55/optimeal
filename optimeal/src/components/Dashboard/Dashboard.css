@@ -119,6 +119,7 @@
 .dashboard-button,
 .text-link,
 .meal-line button,
+.day-card__toggle,
 .goal-form button,
 .goal-item button,
 .icon-button {
@@ -130,7 +131,7 @@
   font: inherit;
   font-weight: 780;
   justify-content: center;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 14px;
   text-decoration: none;
 }
@@ -320,8 +321,22 @@
 }
 
 .meal-line button {
-  min-height: 34px;
+  min-height: var(--control-height);
   padding: 0 10px;
+}
+
+.day-card__header > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.day-card__toggle {
+  background: var(--color-surface-muted);
+  color: var(--color-primary-hover);
+  display: none;
+  flex: 0 0 auto;
 }
 
 .meal-detail-panel p,
@@ -572,8 +587,8 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #8fd8c0;
-  outline-offset: 2px;
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 @media (max-width: 980px) {
@@ -598,10 +613,45 @@ textarea:focus-visible {
     padding: 18px;
   }
 
-  .summary-grid,
   .form-grid,
   .macro-row {
     grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    display: flex;
+    margin-left: -18px;
+    margin-right: -18px;
+    overflow-x: auto;
+    padding: 0 18px var(--space-2);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .summary-grid::-webkit-scrollbar,
+  .demo-story__grid::-webkit-scrollbar,
+  .dashboard-sidebar::-webkit-scrollbar { display: none; }
+
+  .summary-card {
+    flex: 0 0 10.5rem;
+    scroll-snap-align: start;
+  }
+
+  .summary-card strong { font-size: 1.55rem; }
+  .summary-card p { font-size: 0.84rem; }
+
+  .demo-story__grid {
+    display: flex;
+    margin-right: calc(var(--space-4) * -1);
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .demo-story__grid article {
+    flex: 0 0 15rem;
+    scroll-snap-align: start;
   }
 
   .demo-banner,
@@ -627,10 +677,38 @@ textarea:focus-visible {
     width: 100%;
   }
 
+  .demo-banner__actions a:nth-child(n + 2) { display: none; }
+  .dashboard-actions .dashboard-button--secondary { display: none; }
+
+  .dashboard-sidebar {
+    display: flex;
+    margin-right: -18px;
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    padding-right: 18px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .dashboard-sidebar > .dashboard-panel {
+    flex: 0 0 min(20rem, 86vw);
+    scroll-snap-align: start;
+  }
+
   .meal-line button,
   .dashboard-button,
   .text-link,
   .icon-button {
     width: 100%;
   }
+
+  .day-card { padding: var(--space-3); }
+  .day-card__header { border-bottom: 0; padding-bottom: 0; }
+  .day-card__header > div { display: block; width: auto; }
+  .day-card__header span { display: block; font-size: 0.84rem; margin-top: var(--space-1); }
+  .day-card__toggle { display: inline-flex; min-height: var(--control-height); width: auto; }
+  .day-card.is-collapsed .day-card__meals { display: none; }
+  .day-card.is-expanded .day-card__header { border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3); }
+  .meal-line { border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3); }
+  .meal-line:last-child { border-bottom: 0; }
 }

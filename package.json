@@ -7,8 +7,10 @@
     "node": ">=18"
   },
   "scripts": {
-    "lint": "node --check api/generateMealPlan.js",
-    "build": "npm run lint"
+    "lint": "node --check api/generateMealPlan.js && node --check api/mealPlanCore.js && node --check scripts/benchmarkMealGeneration.js",
+    "test": "node --test api/*.test.js",
+    "benchmark:meal-plan": "node scripts/benchmarkMealGeneration.js",
+    "build": "npm run lint && npm test"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0",

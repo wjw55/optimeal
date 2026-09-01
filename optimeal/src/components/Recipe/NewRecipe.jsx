@@ -24,6 +24,7 @@ function NewRecipe() {
   const [recipe, setRecipe] = useState(initialRecipe);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   const updateRecipe = (field, value) => {
     setRecipe((current) => ({ ...current, [field]: value }));
@@ -44,6 +45,7 @@ function NewRecipe() {
       return;
     }
 
+    setPosting(true);
     try {
       await addDoc(collection(db, 'recipes'), {
         title: recipe.title.trim(),
@@ -72,6 +74,8 @@ function NewRecipe() {
     } catch (err) {
       console.error('Error posting recipe:', err);
       setError('Failed to post recipe. Please try again.');
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -82,8 +86,8 @@ function NewRecipe() {
         <h2>Share Recipe</h2>
       </div>
 
-      {submitted && <div className="success">Recipe posted.</div>}
-      {error && <div className="error">{error}</div>}
+      {submitted && <div className="success" role="status" aria-live="polite">Recipe posted.</div>}
+      {error && <div className="error" role="alert">{error}</div>}
 
       <label>
         Title *
@@ -154,7 +158,7 @@ function NewRecipe() {
         </label>
       </div>
 
-      <button type="submit">Share Recipe</button>
+      <button type="submit" disabled={posting}>{posting ? 'Sharing…' : 'Share recipe'}</button>
     </form>
   );
 }

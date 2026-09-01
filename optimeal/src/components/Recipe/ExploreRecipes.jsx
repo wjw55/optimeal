@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, doc, getDocs, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../auth/firebase';
+import LoadingPanel from '../ui/LoadingPanel';
 import './ExploreRecipes.css';
 
 function ExploreRecipes() {
@@ -10,6 +11,8 @@ function ExploreRecipes() {
   const [dietFilter, setDietFilter] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +32,8 @@ function ExploreRecipes() {
       } catch (fetchError) {
         console.error('Error loading recipes:', fetchError);
         setError('Recipes could not be loaded. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -63,8 +68,17 @@ function ExploreRecipes() {
 
     const isSaved = savedIds.includes(recipeId);
     const updated = isSaved ? savedIds.filter((id) => id !== recipeId) : [...savedIds, recipeId];
-    await setDoc(doc(db, 'users', user.uid), { savedRecipes: updated }, { merge: true });
-    setSavedIds(updated);
+    setSavingId(recipeId);
+    setError('');
+    try {
+      await setDoc(doc(db, 'users', user.uid), { savedRecipes: updated }, { merge: true });
+      setSavedIds(updated);
+    } catch (saveError) {
+      console.error('Error saving recipe:', saveError);
+      setError('That recipe could not be updated. Please try again.');
+    } finally {
+      setSavingId('');
+    }
   };
 
   return (
@@ -74,7 +88,7 @@ function ExploreRecipes() {
         <h2>Explore Recipes</h2>
       </div>
 
-      {error && <div className="recipe-error">{error}</div>}
+      {error && <div className="recipe-error" role="alert">{error}</div>}
 
       <div className="recipe-filters">
         <label>
@@ -99,7 +113,9 @@ function ExploreRecipes() {
         </label>
       </div>
 
-      {!filteredRecipes.length ? (
+      {loading ? (
+        <LoadingPanel>Loading recipes…</LoadingPanel>
+      ) : !filteredRecipes.length ? (
         <div className="recipe-empty">
           <h3>No recipes found.</h3>
           <p>Try a different search or filter.</p>
@@ -112,6 +128,7 @@ function ExploreRecipes() {
               recipe={recipe}
               saved={savedIds.includes(recipe.id)}
               onToggleSave={() => toggleSave(recipe.id)}
+              saving={savingId === recipe.id}
             />
           ))}
         </div>
@@ -120,14 +137,14 @@ function ExploreRecipes() {
   );
 }
 
-function RecipeCard({ recipe, saved, onToggleSave }) {
+function RecipeCard({ recipe, saved, onToggleSave, saving }) {
   const tags = recipe.tags || [];
   const dietLabels = recipe.dietLabels || [];
   const totalTime = Number(recipe.prepTime || 0) + Number(recipe.cookTime || 0);
 
   return (
     <article className="recipe-card">
-      {recipe.image && <img src={recipe.image} alt="" className="recipe-card__image" />}
+      {recipe.image && <img src={recipe.image} alt={`Finished ${recipe.title}`} className="recipe-card__image" />}
       <div className="recipe-card__content">
         <h3>{recipe.title}</h3>
         <p>{recipe.description || 'No description provided.'}</p>
@@ -142,7 +159,7 @@ function RecipeCard({ recipe, saved, onToggleSave }) {
       </div>
       <div className="recipe-footer">
         <span>By {recipe.authorName || 'Community member'}</span>
-        <button type="button" onClick={onToggleSave}>{saved ? 'Saved' : 'Save'}</button>
+        <button type="button" onClick={onToggleSave} disabled={saving} aria-pressed={saved}>{saving ? 'Saving…' : saved ? 'Saved' : 'Save'}</button>
       </div>
     </article>
   );

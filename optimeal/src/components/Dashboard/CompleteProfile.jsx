@@ -17,6 +17,7 @@ import './CompleteProfile.css';
 function CompleteProfile() {
   const [profile, setProfile] = useState(() => normalizeProfile({}));
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
   const updateProfileField = (field, value) => {
@@ -44,13 +45,16 @@ function CompleteProfile() {
     }
 
     const profileForSave = buildProfileForSave(profile);
-    await setDoc(doc(db, 'users', user.uid), {
-      ...profileForSave,
-      height: deleteField(),
-      weight: deleteField()
-    }, { merge: true });
-
-    navigate('/dashboard');
+    setSaving(true);
+    try {
+      await setDoc(doc(db, 'users', user.uid), { ...profileForSave, height: deleteField(), weight: deleteField() }, { merge: true });
+      navigate('/dashboard');
+    } catch (saveError) {
+      console.error('Error saving profile:', saveError);
+      setError('Your profile could not be saved. Your entries are still here—please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -62,7 +66,7 @@ function CompleteProfile() {
           These preferences help Optimeal shape meals, nutrition targets, and grocery lists around your week.
         </p>
 
-        {error && <div className="complete-profile__error">{error}</div>}
+        {error && <div className="complete-profile__error" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="complete-profile__section-heading">
@@ -210,7 +214,7 @@ function CompleteProfile() {
             onToggle={(value) => toggleProfileArrayValue('appliances', value)}
           />
 
-          <button type="submit">Save and Continue</button>
+          <button type="submit" disabled={saving}>{saving ? 'Saving profile…' : 'Save and continue'}</button>
         </form>
       </section>
     </main>

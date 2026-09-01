@@ -1,17 +1,17 @@
-//to prevent entering of dashboard directly
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from './firebase'; // adjust path if needed
+import { auth } from './firebase';
+import LoadingPanel from '../ui/LoadingPanel';
 
-const PrivateRoute = ({ children }) => {
+function PrivateRoute({ children }) {
   const [user, loading] = useAuthState(auth);
 
   if (loading) {
-    return <p>Loading...</p>; // Show while checking auth
+    return <main><LoadingPanel>Checking your account…</LoadingPanel></main>;
   }
 
   return user ? children : <Navigate to="/login" replace />;
-};
+}
 
 export default PrivateRoute;

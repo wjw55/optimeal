@@ -107,7 +107,7 @@
   box-sizing: border-box;
   color: #13231f;
   font: inherit;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 9px 10px;
   width: 100%;
 }
@@ -126,7 +126,7 @@
   cursor: pointer;
   font: inherit;
   font-weight: 780;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 14px;
 }
 
@@ -141,6 +141,26 @@
 .community-post__header button {
   background: #ffffff;
   color: #9f2d2d;
+}
+
+.community-post-form button:disabled,
+.community-post__actions button:disabled,
+.comment-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.community-file-hint {
+  color: var(--color-text-muted);
+  margin-top: calc(var(--space-2) * -1);
+}
+
+.community-image-preview {
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  width: 100%;
 }
 
 .community-feed {

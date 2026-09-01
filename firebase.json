@@ -9,6 +9,9 @@
   },
   "hosting": {
     "public": "optimeal/build",
+    "predeploy": [
+      "node scripts/verifyFirebaseDeploy.mjs"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

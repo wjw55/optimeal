@@ -7,8 +7,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "lint": "node --check api/generateMealPlan.js && node --check api/mealPlanCore.js && node --check scripts/benchmarkMealGeneration.js",
-    "test": "node --test api/*.test.js",
+    "lint": "node --check api/generateMealPlan.js && node --check lib/mealPlanCore.js && node --check lib/openRouterMealPlan.js && node --check scripts/benchmarkMealGeneration.js",
+    "test": "node --test tests/api/*.test.js",
     "benchmark:meal-plan": "node scripts/benchmarkMealGeneration.js",
     "build": "npm run lint && npm test"
   },

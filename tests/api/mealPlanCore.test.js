@@ -2,13 +2,45 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   DAYS,
+  MEAL_PLAN_JSON_SCHEMA,
   buildMealPlanPrompt,
   calculateWeeklyAverage,
   inferGroceryCategory,
   normalizeMealPlanForFirestore,
   parseMealPlanJson,
   validateMealPlanCandidate
-} = require("./mealPlanCore");
+} = require("../../lib/mealPlanCore");
+
+test("provider JSON Schema is strict and excludes server-derived fields", () => {
+  const days = MEAL_PLAN_JSON_SCHEMA.properties.days;
+  const day = days.items;
+  const meal = day.properties.meals.items;
+  const ingredient = meal.properties.ingredients.items;
+
+  assert.equal(MEAL_PLAN_JSON_SCHEMA.additionalProperties, false);
+  assert.equal(days.minItems, 7);
+  assert.equal(days.maxItems, 7);
+  assert.equal(day.additionalProperties, false);
+  assert.equal(meal.additionalProperties, false);
+  assert.equal(ingredient.additionalProperties, false);
+  assert.equal(day.properties.meals.minItems, 3);
+  assert.equal(day.properties.meals.maxItems, 4);
+  assert.deepEqual(meal.required, [
+    "type",
+    "name",
+    "ingredients",
+    "calories",
+    "protein",
+    "carbs",
+    "fats",
+    "prepMinutes"
+  ]);
+  assert.deepEqual(ingredient.required, ["name", "quantity", "unit"]);
+  assert.equal(meal.properties.reason, undefined);
+  assert.equal(ingredient.properties.category, undefined);
+  assert.equal(day.properties.totalNutrition, undefined);
+  assert.equal(MEAL_PLAN_JSON_SCHEMA.properties.groceries, undefined);
+});
 
 test("compact meal-plan output validates without derived fields", () => {
   const validated = validateMealPlanCandidate(compactCandidate());

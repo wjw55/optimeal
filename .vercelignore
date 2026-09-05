@@ -1,0 +1,7 @@
+optimeal/
+functions/
+firebase/
+docs/
+artifacts/
+.firebase/
+.env*

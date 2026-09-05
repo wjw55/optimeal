@@ -5,12 +5,21 @@ const {
   normalizeMealPlanForFirestore,
   parseMealPlanJson,
   validateMealPlanCandidate
-} = require("../api/mealPlanCore");
+} = require("../lib/mealPlanCore");
+const {
+  DEFAULT_FALLBACK_MODEL,
+  DEFAULT_PRIMARY_MODEL,
+  buildOpenRouterMealPlanRequest,
+  extractOpenRouterErrorMetadata,
+  extractOpenRouterMealPlanResult,
+  orderedModels
+} = require("../lib/openRouterMealPlan");
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
+const PRIMARY_MODEL = process.env.OPENROUTER_MODEL || DEFAULT_PRIMARY_MODEL;
+const FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL;
 const RUN_COUNT = 10;
-const REQUEST_TIMEOUT_MS = 55000;
+const REQUEST_TIMEOUT_MS = 45000;
 const CONFIRMATION_FLAG = "--confirm-live";
 
 const PROFILE_VARIANTS = [
@@ -50,10 +59,16 @@ async function main() {
   const successful = results.filter((result) => result.valid);
   const latencies = successful.map((result) => result.durationMs).sort((a, b) => a - b);
   const summary = {
-    model: MODEL,
+    models: orderedModels(PRIMARY_MODEL, FALLBACK_MODEL),
     runs: results.length,
     validRuns: successful.length,
     truncatedRuns: results.filter((result) => result.finishReason === "length").length,
+    timeoutRuns: results.filter((result) => result.status === "timeout").length,
+    providerErrorRuns: results.filter((result) => Number.isFinite(result.status) && result.status >= 400).length,
+    fallbackRuns: results.filter((result) => result.fallbackUsed).length,
+    healingRuns: results.filter((result) => result.healingApplied).length,
+    selectedModelCounts: countBy(successful, "selectedModel"),
+    selectedProviderCounts: countBy(successful, "selectedProvider"),
     p50Ms: percentile(latencies, 0.5),
     p90Ms: percentile(latencies, 0.9),
     averagePromptTokens: averageMetric(successful, "promptTokens"),
@@ -81,38 +96,33 @@ async function runBenchmarkRequest({ apiKey, profile, run }) {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://optimeal-bbabb.web.app",
-        "X-OpenRouter-Title": "Optimeal benchmark"
+        "X-OpenRouter-Title": "Optimeal benchmark",
+        "X-OpenRouter-Metadata": "enabled"
       },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: "system",
-            content: "You generate valid JSON meal plans for a meal planning app. Return only JSON."
-          },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.55,
-        response_format: { type: "json_object" }
-      }),
+      body: JSON.stringify(buildOpenRouterMealPlanRequest({
+        primaryModel: PRIMARY_MODEL,
+        fallbackModel: FALLBACK_MODEL,
+        prompt
+      })),
       signal: controller.signal
     });
 
+    const data = await response.json().catch(() => null);
     const durationMs = Math.round(performance.now() - startedAt);
     if (!response.ok) {
+      const errorMetadata = extractOpenRouterErrorMetadata(data);
       return {
         run,
         valid: false,
         status: response.status,
         durationMs,
-        finishReason: "provider_error"
+        finishReason: "provider_error",
+        ...errorMetadata
       };
     }
 
-    const data = await response.json();
-    const choice = data && data.choices ? data.choices[0] : null;
-    const content = choice && choice.message ? choice.message.content : "";
-    const usage = data && data.usage ? data.usage : {};
+    const providerResult = extractOpenRouterMealPlanResult(data, PRIMARY_MODEL);
+    const content = providerResult.content;
 
     let valid = false;
     let plannedMeals = 0;
@@ -123,7 +133,7 @@ async function runBenchmarkRequest({ apiKey, profile, run }) {
       plannedMeals = DAYS.reduce((count, day) => {
         return count + Object.values(normalized[day].meals).filter((meal) => meal.name).length;
       }, 0);
-      valid = Object.keys(normalized).length === 7 && plannedMeals >= 21;
+      valid = providerResult.finishReason === "stop" && Object.keys(normalized).length === 7 && plannedMeals >= 21;
     } catch (error) {
       valid = false;
     }
@@ -135,10 +145,18 @@ async function runBenchmarkRequest({ apiKey, profile, run }) {
       durationMs,
       plannedMeals,
       responseChars: content.length,
-      finishReason: choice && choice.finish_reason ? choice.finish_reason : "unknown",
-      promptTokens: numericMetric(usage.prompt_tokens),
-      completionTokens: numericMetric(usage.completion_tokens),
-      totalTokens: numericMetric(usage.total_tokens)
+      finishReason: providerResult.finishReason,
+      selectedModel: providerResult.selectedModel,
+      selectedProvider: providerResult.selectedProvider,
+      routeStrategy: providerResult.routeStrategy,
+      routeAttempt: providerResult.routeAttempt,
+      fallbackUsed: providerResult.fallbackUsed,
+      healingApplied: providerResult.healingApplied,
+      healingMode: providerResult.healingMode,
+      healingImproved: providerResult.healingImproved,
+      promptTokens: providerResult.usage.promptTokens,
+      completionTokens: providerResult.usage.completionTokens,
+      totalTokens: providerResult.usage.totalTokens
     };
   } catch (error) {
     return {
@@ -187,9 +205,12 @@ function averageMetric(results, field) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-function numericMetric(value) {
-  const metric = Number(value);
-  return Number.isFinite(metric) ? metric : undefined;
+function countBy(results, field) {
+  return results.reduce((counts, result) => {
+    const value = result[field] || "unknown";
+    counts[value] = (counts[value] || 0) + 1;
+    return counts;
+  }, {});
 }
 
 main().catch((error) => {

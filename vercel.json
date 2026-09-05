@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generateMealPlan.js": {
+      "maxDuration": 60
+    }
+  }
+}

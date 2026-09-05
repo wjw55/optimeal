@@ -7,12 +7,19 @@ const {
   normalizeMealPlanForFirestore,
   parseMealPlanJson,
   validateMealPlanCandidate
-} = require("./mealPlanCore");
+} = require("../lib/mealPlanCore");
+const {
+  DEFAULT_FALLBACK_MODEL,
+  DEFAULT_PRIMARY_MODEL,
+  buildOpenRouterMealPlanRequest,
+  extractOpenRouterErrorMetadata,
+  extractOpenRouterMealPlanResult
+} = require("../lib/openRouterMealPlan");
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "openrouter/free";
 const SITE_URL = "https://optimeal-bbabb.web.app";
 const MAX_BODY_BYTES = 25 * 1024;
+const OPENROUTER_TIMEOUT_MS = 45000;
 const DAILY_GENERATION_LIMIT = Number(process.env.MEAL_PLAN_DAILY_LIMIT || 10);
 
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -85,8 +92,9 @@ class PublicHttpError extends Error {
 class RateLimitError extends Error {}
 
 module.exports = async function generateMealPlanHandler(req, res) {
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
-  const timing = createTimingLogger({ model });
+  const primaryModel = process.env.OPENROUTER_MODEL || DEFAULT_PRIMARY_MODEL;
+  const fallbackModel = process.env.OPENROUTER_FALLBACK_MODEL || DEFAULT_FALLBACK_MODEL;
+  const timing = createTimingLogger({ primaryModel, fallbackModel });
   let uid = "unknown";
 
   try {
@@ -152,7 +160,8 @@ module.exports = async function generateMealPlanHandler(req, res) {
     const openRouterStartedAt = Date.now();
     const providerResult = await callOpenRouter({
       apiKey: process.env.OPENROUTER_API_KEY,
-      model,
+      primaryModel,
+      fallbackModel,
       prompt
     });
     timing.log("openrouter_request", openRouterStartedAt, {
@@ -162,7 +171,17 @@ module.exports = async function generateMealPlanHandler(req, res) {
       responseChars: providerResult.content.length,
       promptTokens: providerResult.usage.promptTokens,
       completionTokens: providerResult.usage.completionTokens,
-      totalTokens: providerResult.usage.totalTokens
+      totalTokens: providerResult.usage.totalTokens,
+      selectedModel: providerResult.selectedModel,
+      selectedProvider: providerResult.selectedProvider,
+      routeStrategy: providerResult.routeStrategy,
+      routeAttempt: providerResult.routeAttempt,
+      fallbackUsed: providerResult.fallbackUsed,
+      healingApplied: providerResult.healingApplied,
+      healingMode: providerResult.healingMode,
+      healingImproved: providerResult.healingImproved,
+      healingOriginalChars: providerResult.healingOriginalChars,
+      healingFinalChars: providerResult.healingFinalChars
     });
 
     const parseStartedAt = Date.now();
@@ -210,7 +229,7 @@ module.exports = async function generateMealPlanHandler(req, res) {
   }
 };
 
-function createTimingLogger({ model }) {
+function createTimingLogger({ primaryModel, fallbackModel }) {
   const startedAt = Date.now();
 
   return {
@@ -219,7 +238,8 @@ function createTimingLogger({ model }) {
       const now = Date.now();
       console.log("optimeal.generateMealPlan.timing", {
         uid: details.uid || "unknown",
-        model,
+        primaryModel,
+        fallbackModel,
         stage,
         durationMs: now - stageStartedAt,
         totalMs: now - startedAt,
@@ -231,7 +251,17 @@ function createTimingLogger({ model }) {
         ...(Number.isFinite(details.promptTokens) ? { promptTokens: details.promptTokens } : {}),
         ...(Number.isFinite(details.completionTokens) ? { completionTokens: details.completionTokens } : {}),
         ...(Number.isFinite(details.totalTokens) ? { totalTokens: details.totalTokens } : {}),
-        ...(details.finishReason ? { finishReason: details.finishReason } : {})
+        ...(details.finishReason ? { finishReason: details.finishReason } : {}),
+        ...(details.selectedModel ? { selectedModel: details.selectedModel } : {}),
+        ...(details.selectedProvider ? { selectedProvider: details.selectedProvider } : {}),
+        ...(details.routeStrategy ? { routeStrategy: details.routeStrategy } : {}),
+        ...(Number.isFinite(details.routeAttempt) ? { routeAttempt: details.routeAttempt } : {}),
+        ...(typeof details.fallbackUsed === "boolean" ? { fallbackUsed: details.fallbackUsed } : {}),
+        ...(typeof details.healingApplied === "boolean" ? { healingApplied: details.healingApplied } : {}),
+        ...(details.healingMode ? { healingMode: details.healingMode } : {}),
+        ...(typeof details.healingImproved === "boolean" ? { healingImproved: details.healingImproved } : {}),
+        ...(Number.isFinite(details.healingOriginalChars) ? { healingOriginalChars: details.healingOriginalChars } : {}),
+        ...(Number.isFinite(details.healingFinalChars) ? { healingFinalChars: details.healingFinalChars } : {})
       });
     }
   };
@@ -442,7 +472,7 @@ async function enforceDailyLimit(uid) {
   }
 }
 
-async function callOpenRouter({ apiKey, model, prompt }) {
+async function callOpenRouter({ apiKey, primaryModel, fallbackModel, prompt }) {
   try {
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
@@ -450,59 +480,57 @@ async function callOpenRouter({ apiKey, model, prompt }) {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": SITE_URL,
-        "X-OpenRouter-Title": "Optimeal"
+        "X-OpenRouter-Title": "Optimeal",
+        "X-OpenRouter-Metadata": "enabled"
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: "You generate valid JSON meal plans for a meal planning app. Return only JSON."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.55,
-        response_format: {
-          type: "json_object"
-        }
-      })
+      body: JSON.stringify(buildOpenRouterMealPlanRequest({
+        primaryModel,
+        fallbackModel,
+        prompt
+      })),
+      signal: AbortSignal.timeout(OPENROUTER_TIMEOUT_MS)
+    });
+
+    const data = await response.json().catch((error) => {
+      if (error.name === "TimeoutError" || error.name === "AbortError") throw error;
+      return null;
     });
 
     if (!response.ok) {
-      const providerMessage = await response.text();
+      const errorMetadata = extractOpenRouterErrorMetadata(data);
       console.error("OpenRouter request failed", {
         status: response.status,
-        body: providerMessage.slice(0, 500)
+        ...errorMetadata
       });
       throw new PublicHttpError(502, "Could not generate your meal plan. Please try again.");
     }
 
-    const data = await response.json();
-    const choice = data && data.choices ? data.choices[0] : null;
-    const content = choice && choice.message
-      ? choice.message.content
-      : "";
+    const result = extractOpenRouterMealPlanResult(data, primaryModel);
 
-    if (!content) {
-      console.error("OpenRouter returned an empty response");
+    if (result.finishReason !== "stop") {
+      console.error("OpenRouter did not complete the meal plan", {
+        finishReason: result.finishReason
+      });
+      throw new PublicHttpError(502, "The meal plan was incomplete. Please try again.");
+    }
+
+    if (!result.content) {
+      console.error("OpenRouter returned an empty response", {
+        selectedModel: result.selectedModel,
+        selectedProvider: result.selectedProvider,
+        routeStrategy: result.routeStrategy,
+        routeAttempt: result.routeAttempt
+      });
       throw new PublicHttpError(502, "Could not generate your meal plan. Please try again.");
     }
 
-    const usage = data && data.usage ? data.usage : {};
-    return {
-      content,
-      finishReason: choice && choice.finish_reason ? choice.finish_reason : "unknown",
-      usage: {
-        promptTokens: numericMetric(usage.prompt_tokens),
-        completionTokens: numericMetric(usage.completion_tokens),
-        totalTokens: numericMetric(usage.total_tokens)
-      }
-    };
+    return result;
   } catch (error) {
     if (error instanceof PublicHttpError) throw error;
+
+    if (error.name === "TimeoutError" || error.name === "AbortError") {
+      throw new PublicHttpError(504, "Meal generation took too long. Please try again.");
+    }
 
     console.error("OpenRouter call failed", { message: error.message });
     throw new PublicHttpError(502, "Could not generate your meal plan. Please try again.");
@@ -532,11 +560,6 @@ function validateGeneratedMealPlan(candidate, uid) {
     });
     throw new PublicHttpError(502, "Generated meal plan was invalid. Please try again.");
   }
-}
-
-function numericMetric(value) {
-  const metric = Number(value);
-  return Number.isFinite(metric) ? metric : undefined;
 }
 
 function parseNumeric(value) {

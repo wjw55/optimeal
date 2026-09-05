@@ -509,7 +509,10 @@ async function callOpenRouter({ apiKey, primaryModel, fallbackModel, prompt }) {
 
     if (result.finishReason !== "stop") {
       console.error("OpenRouter did not complete the meal plan", {
-        finishReason: result.finishReason
+        finishReason: result.finishReason,
+        selectedModel: result.selectedModel,
+        responseChars: result.content.length,
+        completionTokens: result.usage.completionTokens
       });
       throw new PublicHttpError(502, "The meal plan was incomplete. Please try again.");
     }

@@ -21,6 +21,8 @@ test("OpenRouter request uses strict structured output, healing, and required pa
   assert.equal(request.model, undefined);
   assert.equal(request.messages[1].content, "Generate the test plan.");
   assert.equal(request.temperature, 0.55);
+  assert.equal(request.max_tokens, 8192);
+  assert.deepEqual(request.reasoning, { effort: "none" });
   assert.equal(request.response_format.type, "json_schema");
   assert.equal(request.response_format.json_schema.strict, true);
   assert.equal(request.response_format.json_schema.schema.additionalProperties, false);

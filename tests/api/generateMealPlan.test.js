@@ -70,6 +70,14 @@ test("handler rejects truncated output even if its JSON is valid", async () => {
   assert.equal(res.body.mealPlan, undefined);
 });
 
+test("handler treats an HTTP 200 provider error as a failed generation", async () => {
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ error: { code: 503, message: "Provider unavailable" } }) });
+  const res = await request();
+  assert.equal(res.statusCode, 502);
+  assert.match(res.body.message, /Could not generate/);
+  assert.equal(res.body.mealPlan, undefined);
+});
+
 test("handler reports timeouts during the request and response body", async () => {
   for (const bodyTimeout of [false, true]) {
     const timeout = () => { throw new DOMException("Timed out", "TimeoutError"); };

@@ -496,7 +496,7 @@ async function callOpenRouter({ apiKey, primaryModel, fallbackModel, prompt }) {
       return null;
     });
 
-    if (!response.ok) {
+    if (!response.ok || (data && data.error)) {
       const errorMetadata = extractOpenRouterErrorMetadata(data);
       console.error("OpenRouter request failed", {
         status: response.status,

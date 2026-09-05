@@ -7,8 +7,8 @@ const {
   orderedModels
 } = require("../../lib/openRouterMealPlan");
 
-const PRIMARY = "liquid/lfm-2.5-2.6b:free";
-const FALLBACK = "dots-studio/dots-3-note-preview:free";
+const PRIMARY = "z-ai/glm-5.2:free";
+const FALLBACK = "nvidia/nemotron-3-super-120b-a12b:free";
 
 test("OpenRouter request uses strict structured output, healing, and required parameters", () => {
   const request = buildOpenRouterMealPlanRequest({
@@ -22,7 +22,7 @@ test("OpenRouter request uses strict structured output, healing, and required pa
   assert.equal(request.messages[1].content, "Generate the test plan.");
   assert.equal(request.temperature, 0.55);
   assert.equal(request.max_tokens, 8192);
-  assert.deepEqual(request.reasoning, { effort: "none" });
+  assert.deepEqual(request.reasoning, { enabled: false, exclude: true });
   assert.equal(request.response_format.type, "json_schema");
   assert.equal(request.response_format.json_schema.strict, true);
   assert.equal(request.response_format.json_schema.schema.additionalProperties, false);

@@ -4,25 +4,21 @@ AI-assisted meal planning for goals, diet preferences, nutrition, and weekly gro
 
 Live app: https://optimeal-bbabb.web.app/
 
+The September 5, 2026 release is deployed. See [release verification and known limitations](docs/release-2026-09-05.md) for test results, model routing, and deployment details. Nutrition targets guide the model but are not enforced; generated nutrition estimates and ingredient categories need review.
+
 ## Screenshots
 
-TODO after deployment:
+Real screenshots of the deployed app. Authenticated views use a temporary release-test account with synthetic preferences.
 
-- Landing page
-- Demo dashboard
-- Meal generation flow
-- Grocery list
-- Community recipes
+![Optimeal landing page](docs/screenshots/landing.png)
 
-Suggested paths:
+![Public demo dashboard](docs/screenshots/demo-dashboard.png)
 
-- `docs/screenshots/landing.png`
-- `docs/screenshots/demo-dashboard.png`
-- `docs/screenshots/grocery-list.png`
-- `docs/screenshots/community-recipes.png`
+![Generated weekly meal plan](docs/screenshots/meal-generation-flow.png)
 
-Screenshots should be captured from the deployed app after the v2 polish deployment.
-Do not add mock or stock screenshots; use real captures from the deployed or local app.
+![Categorized grocery list](docs/screenshots/grocery-list.png)
+
+![Community recipe browser](docs/screenshots/community-recipes.png)
 
 ## Problem
 
@@ -41,7 +37,7 @@ Planning meals is not just picking recipes. A useful planner needs to connect di
 
 ## Tech Stack
 
-- React 19 with Create React App
+- React 19 with Vite
 - React Router
 - Firebase Authentication
 - Cloud Firestore
@@ -50,6 +46,7 @@ Planning meals is not just picking recipes. A useful planner needs to connect di
 - Vercel Serverless Functions for AI generation
 - OpenRouter API
 - Zod validation
+- Vitest, Testing Library, and Node.js test runner
 - npm
 
 ## Architecture
@@ -92,25 +89,23 @@ Open `/demo` or click `Try Demo` on the landing page. Demo mode uses local sampl
 
 ```bash
 git clone https://github.com/wjw55/optimeal.git
-cd optimeal/optimeal
-npm install
-cp .env.example .env
+cd optimeal
+npm ci
+cd optimeal
+npm ci
+cp .env.example .env.local
 npm start
 ```
 
-For a production build:
+Vite starts at `http://localhost:5173`. From the repository root, build and test with:
 
 ```bash
-cd ../optimeal
 npm run build
+npm --prefix optimeal run test:all
+npm --prefix optimeal run build
 ```
 
-Install the Vercel API dependencies from the repository root:
-
-```bash
-cd ..
-npm install
-```
+The root build checks the backend and runs its tests; the frontend build produces `optimeal/build`.
 
 ## Environment Variables
 
@@ -128,14 +123,15 @@ Required Vercel environment variables:
 
 ```env
 OPENROUTER_API_KEY=
-OPENROUTER_MODEL=openrouter/free
+OPENROUTER_MODEL=z-ai/glm-5.2:free
+OPENROUTER_FALLBACK_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 ALLOWED_ORIGINS=https://optimeal-bbabb.web.app,https://optimeal-bbabb.firebaseapp.com
 ```
 
 For local development, include the frontend origin too:
 
 ```env
-ALLOWED_ORIGINS=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:5173
 ```
 
 Preferred Firebase Admin credential for Vercel:
@@ -184,7 +180,7 @@ Demo mode does not call the AI endpoint and continues to use local sample data.
 
 ## AI Model Notes
 
-`OPENROUTER_MODEL` is configured in Vercel, so the model can be changed without rebuilding React. `openrouter/free` is useful for free testing, but free routing can be slower or less consistent. A pinned faster model may reduce routing variability if the project later moves beyond free testing. Do not hardcode a paid model in the frontend.
+`OPENROUTER_MODEL` and `OPENROUTER_FALLBACK_MODEL` are configured in Vercel, so their ordered routing can change without rebuilding React. Optimeal requests strict JSON Schema output, requires compatible providers, enables response healing, and asks OpenRouter to use the fallback when the primary provider fails. Responses have an explicit 8,192-token budget and reasoning is disabled, so configured models must support that setting. The server still validates all seven days and required meals before returning a plan. Free-provider availability and rate limits can change; a failed request shows a retry message and is never saved as a partial plan.
 
 ## Local AI Testing
 
@@ -204,10 +200,10 @@ Demo mode does not call the AI endpoint and continues to use local sample data.
 
 3. Create local env files:
 
-   - `optimeal/.env` with Firebase web config and `REACT_APP_MEAL_PLAN_ENDPOINT=http://localhost:3001/api/generateMealPlan`
+   - `optimeal/.env.local` with Firebase web config and `REACT_APP_MEAL_PLAN_ENDPOINT=http://localhost:3001/api/generateMealPlan`
    - Vercel local env values for `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `ALLOWED_ORIGINS`, and Firebase Admin credentials
 
-4. Run the Vercel endpoint locally from the repository root. Port `3001` avoids the Create React App dev server on `3000`:
+4. Run the Vercel endpoint locally from the repository root on port `3001`, separate from Vite on `5173`:
 
    ```bash
    npx vercel dev --listen 3001
@@ -223,7 +219,7 @@ Demo mode does not call the AI endpoint and continues to use local sample data.
 
 ### Meal-generation benchmark
 
-The benchmark uses synthetic profiles, runs 10 sequential OpenRouter requests, and reports schema validity, response size, token usage, finish reasons, and p50/p90 latency. It does not use Firebase or write meal plans.
+The benchmark uses the production request builder with synthetic profiles, runs 10 sequential OpenRouter requests, and reports schema validity, selected models/providers, fallback and healing use, response size, token usage, finish reasons, provider errors, timeouts, and p50/p90 latency. It does not use Firebase or write meal plans.
 
 Live calls are disabled unless the confirmation flag is supplied. After approving API usage and setting the server-side OpenRouter environment variables, run:
 
@@ -233,7 +229,13 @@ npm run benchmark:meal-plan -- --confirm-live
 
 The command exits unsuccessfully unless all 10 plans are valid, none are truncated, and p90 latency is below 45 seconds. Never place `OPENROUTER_API_KEY` in `optimeal/.env` or pass it as a command-line argument.
 
-## Firebase
+## Release and Deployment
+
+The release includes the redesigned frontend and structured AI generation. Meal swaps, regenerate-day actions, and previous-plan reuse are outside this release.
+
+Only `api/generateMealPlan.js` is a deployed API route. Shared logic lives in `lib/`, and backend tests live in `tests/api/`. Provider requests have a 45-second timeout; incomplete or truncated responses are rejected. Vercel allows 60 seconds for the whole function, and the frontend waits up to 55 seconds.
+
+### Firebase
 
 Firebase hosting is configured at the repository root:
 
@@ -241,16 +243,18 @@ Firebase hosting is configured at the repository root:
 firebase deploy --only hosting,firestore:rules,storage
 ```
 
-To deploy only hosting after rebuilding the React app:
+To deploy only hosting after rebuilding and reviewing the React app:
 
 ```bash
 npm --prefix optimeal run build
-firebase deploy --only hosting
+OPTIMEAL_FIREBASE_DEPLOY_APPROVED=DEPLOY_REVIEWED_CURRENT_BUNDLE firebase deploy --only hosting
 ```
+
+The environment assignment above uses POSIX shell syntax. In PowerShell, set `$env:OPTIMEAL_FIREBASE_DEPLOY_APPROVED` to `DEPLOY_REVIEWED_CURRENT_BUNDLE` for the deployment command, then remove it. The guard requires comparing the current live bundle, reviewing the build, and obtaining explicit deployment approval.
 
 `firebase.json` intentionally does not deploy Firebase Functions so the project can stay on Spark.
 
-## Vercel Deployment
+### Vercel Deployment
 
 1. Connect the GitHub repo to Vercel.
 2. Use the repository root as the Vercel project root so `api/generateMealPlan.js` is deployed.
@@ -259,6 +263,8 @@ firebase deploy --only hosting
 5. Copy the deployed endpoint URL, for example `https://your-vercel-app.vercel.app/api/generateMealPlan`.
 6. Add that URL to the React/Firebase Hosting environment as `REACT_APP_MEAL_PLAN_ENDPOINT`.
 7. Rebuild and redeploy Firebase Hosting.
+
+For an existing linked project, use `npx vercel deploy` for a preview, verify authenticated generation, then use `npx vercel deploy --prod`. Production and preview require the same server-side secrets. Vercel Secret values cannot be downloaded by `env pull`; placeholder values are not usable credentials.
 
 If Vercel tries to build the React app unintentionally, keep the Vercel project focused on the repository root API function and leave Firebase Hosting responsible for the `optimeal/build` frontend.
 
@@ -295,11 +301,9 @@ node scripts/migrateGroceryItems.js --apply
 
 Back up Firestore before running with `--apply`. The script uses Firebase Admin application default credentials, updates only `users/{uid}.currentMeals.groceries`, and does not delete user documents.
 
-## Planned Improvements
+## Future Work (Outside This Release)
 
-- Add meal swap and regenerate-day actions once backend generation is available.
-- Add screenshot assets to this README after deployment.
-- Capture real screenshots in `docs/screenshots/` after the next deployed UI pass.
+- Add meal swap and regenerate-day actions.
 - Add more focused component tests for demo mode and recipe filters.
 - Add profile-hash plan reuse so users can choose a previous plan before regenerating the same profile.
 - Optionally strengthen production rate limiting and monitoring around the Vercel endpoint.

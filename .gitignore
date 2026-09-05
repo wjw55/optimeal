@@ -76,3 +76,6 @@ node_modules/
 
 .vercel
 .env*.local
+
+# Local QA captures; curated release screenshots are tracked in docs/screenshots.
+artifacts/

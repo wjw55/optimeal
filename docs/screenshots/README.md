@@ -1,8 +1,8 @@
 # Screenshots
 
-Capture real screenshots from the deployed app or a verified local build after the v2 polish deployment.
+Captured from the deployed Firebase app on September 5, 2026.
 
-Suggested files:
+Release screenshots:
 
 - `landing.png`
 - `demo-dashboard.png`
@@ -10,4 +10,6 @@ Suggested files:
 - `grocery-list.png`
 - `community-recipes.png`
 
-Do not add generated, stock, or mock screenshots here.
+The landing page and public demo require no login. Authenticated screenshots use an isolated temporary release-test account with synthetic preferences and a real AI-generated plan. They do not show an existing user's private profile or meal plan. The test account is removed after verification.
+
+These are browser captures, not generated or stock illustrations. Older local QA captures remain under the ignored `artifacts/` directory.
